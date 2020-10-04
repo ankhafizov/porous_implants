@@ -3,12 +3,7 @@ import numpy as np
 from scipy import ndimage
 from skimage.segmentation import clear_border
 
-import porous_calc.data_manager as dm
-import porous_calc.helper as helper
-from porous_calc.porous_analysis import unbalanced_otsu
-from porous_calc.logger import logger
-
-VOXEL_SIZE = 9 * 1e-6
+import data_manager as dm
 
 
 def get_structure(neighbors_num=6):
@@ -69,11 +64,10 @@ def image_3d_preview(folder, image, title):
 
 
 def plot_pore_volume_hist(material_volume,
-                           build_plot=False,
-                           structure_neighbors_num=6,
-                           num_of_bins=35,
-                           max_x_value=350,
-                           ax=None):
+                          structure_neighbors_num=6,
+                          num_of_bins=35,
+                          max_x_value=350,
+                          ax=None):
 
     cp = get_closed_pores(material_volume, structure_neighbors_num)
     total_num_of_pores = np.sum(cp)
@@ -85,7 +79,7 @@ def plot_pore_volume_hist(material_volume,
         return []
 
     volume_distribution = get_pore_volume_distribution(cp,
-                                                                      structure_neighbors_num)
+                                                       structure_neighbors_num)
     bins = np.linspace(0, max_x_value, num_of_bins+1)
 
     stats = (f'total_num_of_pores = {total_num_of_pores}\n'
@@ -109,19 +103,19 @@ def plot_pore_volume_hist(material_volume,
 
 
 def get_pore_volume_distribution(closed_pores_volume, structure_neighbors_num):
-    if not phantom.dtype == bool:
-        phantom = phantom > 0
-    connected_components, _ = ndimage.label(levitatting_volume,
+    if not material_volume.dtype == bool:
+        material_volume = material_volume > 0
+    connected_components, _ = ndimage.label(closed_pores_volume,
                                             get_structure(neighbors_num=structure_neighbors_num))
     pore_volume_distribution = np.unique(connected_components, return_counts=True)[1][1:]
 
     return pore_volume_distribution
 
 
-def get_large_pore_coords(material_volume, structure_neighbors_num, phantom=None):
+def get_large_pore_coords(material_volume, structure_neighbors_num):
 
     cp = get_closed_pores(material_volume, structure_neighbors_num)
-    connected_components, _ = ndimage.label(levitatting_volume,
+    connected_components, _ = ndimage.label(cp,
                                             get_structure(neighbors_num=structure_neighbors_num))
     unique_elements = np.unique(connected_components, return_counts=True)
     pore_volume_distribution = unique_elements[1][1:]
