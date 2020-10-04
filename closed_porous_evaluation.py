@@ -67,6 +67,7 @@ def plot_pore_volume_hist(material_volume,
                           structure_neighbors_num=6,
                           num_of_bins=35,
                           max_x_value=350,
+                          log_scale=False,
                           ax=None):
 
     cp = get_closed_pores(material_volume, structure_neighbors_num)
@@ -91,7 +92,7 @@ def plot_pore_volume_hist(material_volume,
 
     ax.hist(volume_distribution,
             bins=bins,
-            log=True,
+            log=log_scale,
             edgecolor='k',
             label='all pores')
 
@@ -103,8 +104,6 @@ def plot_pore_volume_hist(material_volume,
 
 
 def get_pore_volume_distribution(closed_pores_volume, structure_neighbors_num):
-    if not material_volume.dtype == bool:
-        material_volume = material_volume > 0
     connected_components, _ = ndimage.label(closed_pores_volume,
                                             get_structure(neighbors_num=structure_neighbors_num))
     pore_volume_distribution = np.unique(connected_components, return_counts=True)[1][1:]
