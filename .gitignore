@@ -4,3 +4,5 @@ __pycache__/
 
 #generated .stl files
 .vscode/
+
+plots/
