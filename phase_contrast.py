@@ -93,14 +93,16 @@ if __name__=='__main__':
     file_groups = split_list(file_names, number_of_slices_in_group)
     print("total number of slice_groups: ", len(file_groups))
 
-    number_of_slice = 0
+    # manual input params #
+    number_of_slice = 1
+    k = 5000
+    #######################
+
     img3d = []
     for file_name in file_groups[number_of_slice]:
         img2d = np.array(Image.open(file_name))
         img3d.append(img2d)
     img3d=np.asarray(img3d)
 
-    img3d_binarized = binarize_volume(img3d, k=1/3)
+    img3d_binarized = binarize_volume(img3d, k=k)
     save(img3d_binarized, f'test_file{number_of_slice}.h5')
-
-    print(get_img('test_file.h5').shape)
