@@ -7,4 +7,5 @@ __pycache__/
 
 plots/
 database/
+txt_files/
 *.vti
