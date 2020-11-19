@@ -60,8 +60,8 @@ def poganins_correction(img, k=20, mu=25e-8):
     return data_corr
 
 
-def binarize_slice(img2d):
-    img2d_corrected = poganins_correction(img2d, k=20, mu=25e-8)
+def binarize_slice(img2d, k=20, mu=25e-8):
+    img2d_corrected = poganins_correction(img2d, k, mu)
 
     #probably look better
     img2d_corrected_filtered = filter_mean(img2d_corrected)
@@ -70,18 +70,18 @@ def binarize_slice(img2d):
     return img2d_corrected_filtered > thresh
 
 
-def binarize_volume(volume):
+def binarize_volume(volume, k=20, mu=25e-8):
     volume_bin = []
 
     total_num_of_2d_slices = len(volume)
     for i, img2d in enumerate(volume):
-        volume_bin.append(binarize_slice(img2d))
+        volume_bin.append(binarize_slice(img2d, k, mu))
         print(f"{i+1} out of {total_num_of_2d_slices}")
 
     return volume_bin
 
 
-if __name__=='main':
+if __name__=='__main__':
     data_folder = '/nfs/synology-tomodata/external_data/tomo/Diamond/I13'+\
                 '/2020_02/recon/123495/full_recon/20200206141126_123495/TiffSaver-tomo'
 
@@ -100,7 +100,7 @@ if __name__=='main':
         img3d.append(img2d)
     img3d=np.asarray(img3d)
 
-    img3d_binarized = binarize_volume(img3d)
-    save(img3d_binarized, 'test_file.h5')
+    img3d_binarized = binarize_volume(img3d, k=1/3)
+    save(img3d_binarized, f'test_file{number_of_slice}.h5')
 
     print(get_img('test_file.h5').shape)
