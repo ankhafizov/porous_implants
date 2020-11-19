@@ -81,7 +81,7 @@ def binarize_volume(volume):
     return volume_bin
 
 
-if __name__='main':
+if __name__=='main':
     data_folder = '/nfs/synology-tomodata/external_data/tomo/Diamond/I13'+\
                 '/2020_02/recon/123495/full_recon/20200206141126_123495/TiffSaver-tomo'
 
