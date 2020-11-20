@@ -5,10 +5,13 @@ import os
 import h5py
 from scipy.signal import fftconvolve
 from skimage.filters import threshold_otsu
+from scipy.interpolate import interp1d
 
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 PHANTOM_DB_FOLDER_NAME = 'database'
+TXT_FOULDER_NAME = 'txt_files'
+TXT_FILE_NAME = 'k_values.txt'
 
 
 def filter_mean(img):
@@ -81,28 +84,50 @@ def binarize_volume(volume, k=20, mu=25e-8):
     return volume_bin
 
 
-if __name__=='__main__':
-    data_folder = '/nfs/synology-tomodata/external_data/tomo/Diamond/I13'+\
-                '/2020_02/recon/123495/full_recon/20200206141126_123495/TiffSaver-tomo'
+def read_k_values(filename=TXT_FILE_NAME):
+    db_folder = os.path.join(SCRIPT_PATH, TXT_FOULDER_NAME, filename)
+    file = open(db_folder, 'r')
 
-    file_names = Path(data_folder).glob('*.tiff')
-    file_names = list(file_names)
-    print(len(file_names))
+    indexes_of_slices = []
+    k_values = []
+    for line in file:
+        z, k = line.split()
+        z, k = np.int(z), np.float32(k)
+        k_values.append(k)
+        indexes_of_slices.append(z)
 
-    number_of_slices_in_group = 100
-    file_groups = split_list(file_names, number_of_slices_in_group)
-    print("total number of slice_groups: ", len(file_groups))
+    return indexes_of_slices, k_values
 
-    # manual input params #
-    number_of_slice = 1
-    k = 5000
-    #######################
 
-    img3d = []
-    for file_name in file_groups[number_of_slice]:
-        img2d = np.array(Image.open(file_name))
-        img3d.append(img2d)
-    img3d=np.asarray(img3d)
+def interpolate_k_values(indexes_of_slices, k_values, max_number_of_slices):
+    f = interp1d(indexes_of_slices, k_values, kind='nearest')
+    xnew = np.arange(0, indexes_of_slices, 1)
+    return xnew, f(xnew)
 
-    img3d_binarized = binarize_volume(img3d, k=k)
-    save(img3d_binarized, f'test_file{number_of_slice}.h5')
+
+print(interpolate_k_values(indexes_of_slices, k_values, max_number_of_slices))
+# if __name__=='__main__':
+#     data_folder = '/nfs/synology-tomodata/external_data/tomo/Diamond/I13'+\
+#                 '/2020_02/recon/123495/full_recon/20200206141126_123495/TiffSaver-tomo'
+
+#     file_names = Path(data_folder).glob('*.tiff')
+#     file_names = list(file_names)
+#     print(len(file_names))
+
+#     number_of_slices_in_group = 100
+#     file_groups = split_list(file_names, number_of_slices_in_group)
+#     print("total number of slice_groups: ", len(file_groups))
+
+#     # manual input params #
+#     number_of_slice = 1
+#     k = 5000
+#     #######################
+
+#     img3d = []
+#     for file_name in file_groups[number_of_slice]:
+#         img2d = np.array(Image.open(file_name))
+#         img3d.append(img2d)
+#     img3d=np.asarray(img3d)
+
+#     img3d_binarized = binarize_volume(img3d, k=k)
+#     save(img3d_binarized, f'test_file{number_of_slice}.h5')
