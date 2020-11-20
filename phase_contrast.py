@@ -101,33 +101,27 @@ def read_k_values(filename=TXT_FILE_NAME):
 
 def interpolate_k_values(indexes_of_slices, k_values, max_number_of_slices):
     f = interp1d(indexes_of_slices, k_values, kind='nearest')
-    xnew = np.arange(0, indexes_of_slices, 1)
+    xnew = np.arange(0, max_number_of_slices, 1)
     return xnew, f(xnew)
 
 
-print(interpolate_k_values(indexes_of_slices, k_values, max_number_of_slices))
-# if __name__=='__main__':
-#     data_folder = '/nfs/synology-tomodata/external_data/tomo/Diamond/I13'+\
-#                 '/2020_02/recon/123495/full_recon/20200206141126_123495/TiffSaver-tomo'
+if __name__=='__main__':
+    data_folder = '/nfs/synology-tomodata/external_data/tomo/Diamond/I13'+\
+                '/2020_02/recon/123495/full_recon/20200206141126_123495/TiffSaver-tomo'
 
-#     file_names = Path(data_folder).glob('*.tiff')
-#     file_names = list(file_names)
-#     print(len(file_names))
+    file_names = Path(data_folder).glob('*.tiff')
+    file_names = list(file_names)
+    N_fn = len(file_names)
 
-#     number_of_slices_in_group = 100
-#     file_groups = split_list(file_names, number_of_slices_in_group)
-#     print("total number of slice_groups: ", len(file_groups))
+    indexes_of_slices, k_values = read_k_values(filename=TXT_FILE_NAME)
 
-#     # manual input params #
-#     number_of_slice = 1
-#     k = 5000
-#     #######################
-
-#     img3d = []
-#     for file_name in file_groups[number_of_slice]:
-#         img2d = np.array(Image.open(file_name))
-#         img3d.append(img2d)
-#     img3d=np.asarray(img3d)
-
-#     img3d_binarized = binarize_volume(img3d, k=k)
-#     save(img3d_binarized, f'test_file{number_of_slice}.h5')
+    indexes_of_slices, k_values = interpolate_k_values(indexes_of_slices, k_values, N_fn)
+    img3d_bin = []
+    for (file_name, i, k) in zip(file_names, indexes_of_slices, k_values):
+        img2d = np.array(Image.open(file_name))
+        img2d_bin = binarize_slice(img2d, k=k, mu=25e-8)
+        img3d_bin.append(img2d_bin)
+        print(f'{i} out of {N_fn}')
+    
+    img3d_bin=np.asarray(img3d_bin)
+    save(img3d_bin, f'bin_img.h5')
