@@ -104,10 +104,11 @@ def interpolate_k_values(indexes_of_slices, k_values, max_number_of_slices):
     xnew = np.arange(0, max_number_of_slices, 1)
     return xnew, f(xnew)
 
+FILE_ID = '123493'
 
 if __name__=='__main__':
     data_folder = '/nfs/synology-tomodata/external_data/tomo/Diamond/I13'+\
-                '/2020_02/recon/123495/full_recon/20200206141126_123495/TiffSaver-tomo'
+                  f'/2020_02/recon/{FILE_ID}/full_recon/20200206101055_123493/TiffSaver-tomo'
 
     file_names = Path(data_folder).glob('*.tiff')
     file_names = list(file_names)
@@ -121,7 +122,8 @@ if __name__=='__main__':
         img2d = np.array(Image.open(file_name))
         img2d_bin = binarize_slice(img2d, k=k, mu=25e-8)
         img3d_bin.append(img2d_bin)
-        print(f'{i} out of {N_fn}')
+        print(f'{i+1} out of {N_fn}')
     
     img3d_bin=np.asarray(img3d_bin)
-    save(img3d_bin, f'bin_img.h5')
+    print(f'porosity: {FILE_ID}', np.ones(img3d_bin)/img3d_bin.size)
+    save(img3d_bin, f'{FILE_ID}.h5')
