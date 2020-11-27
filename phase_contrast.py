@@ -10,11 +10,11 @@ from helper import crop
 from scipy.ndimage import zoom
 from scipy.ndimage.morphology import binary_closing
 from skimage.morphology import disk
+from file_paths import get_path
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 PHANTOM_DB_FOLDER_NAME = 'database'
 TXT_FOULDER_NAME = 'txt_files'
-TXT_FILE_NAME = 'k_values.txt'
 
 
 def filter_mean(img):
@@ -87,7 +87,7 @@ def binarize_volume(volume, k=20, mu=25e-8):
     return volume_bin
 
 
-def read_k_values(filename=TXT_FILE_NAME):
+def read_k_values(filename):
     db_folder = os.path.join(SCRIPT_PATH, TXT_FOULDER_NAME, filename)
     file = open(db_folder, 'r')
 
@@ -103,7 +103,7 @@ def read_k_values(filename=TXT_FILE_NAME):
 
 
 def interpolate_k_values(indexes_of_slices, k_values, max_number_of_slices):
-    f = interp1d(indexes_of_slices, k_values, kind='nearest')
+    f = interp1d(indexes_of_slices, k_values, kind='nearest', fill_value="extrapolate")
     xnew = np.arange(0, max_number_of_slices, 1)
     return xnew, f(xnew)
 
@@ -118,14 +118,13 @@ def get_2d_mask(img2d, pad_width = 35, disk_radius=35):
 FILE_ID = '123494'
 
 if __name__=='__main__':
-    data_folder = '/nfs/synology-tomodata/external_data/tomo/Diamond/I13'+\
-                  f'/2020_02/recon/{FILE_ID}/full_recon/20200206140043_123494/TiffSaver-tomo'
+    data_folder = get_path(FILE_ID)
 
     file_names = Path(data_folder).glob('*.tiff')
     file_names = list(file_names)
     N_fn = len(file_names)
 
-    indexes_of_slices, k_values = read_k_values(filename=TXT_FILE_NAME)
+    indexes_of_slices, k_values = read_k_values(filename=f'diamond {FILE_ID}.txt')
 
     indexes_of_slices, k_values = interpolate_k_values(indexes_of_slices, k_values, N_fn)
     img3d_bin = []
