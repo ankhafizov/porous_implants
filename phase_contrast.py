@@ -6,7 +6,10 @@ import h5py
 from scipy.signal import fftconvolve
 from skimage.filters import threshold_otsu
 from scipy.interpolate import interp1d
-
+from helper import crop
+from scipy.ndimage import zoom
+from scipy.ndimage.morphology import binary_closing
+from skimage.morphology import disk
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 PHANTOM_DB_FOLDER_NAME = 'database'
@@ -104,11 +107,19 @@ def interpolate_k_values(indexes_of_slices, k_values, max_number_of_slices):
     xnew = np.arange(0, max_number_of_slices, 1)
     return xnew, f(xnew)
 
-FILE_ID = '123493'
+
+def get_2d_mask(img2d, pad_width = 35, disk_radius=35):
+    merged_img = zoom(img2d, 0.1, order=1)
+    result_paded = np.pad(merged_img,pad_width=((pad_width,pad_width),(pad_width,pad_width)), mode='constant')
+    img_mask = binary_closing(result_paded, structure=disk(disk_radius))
+    return crop(zoom(img_mask, 10, order=1), img2d.shape)
+
+
+FILE_ID = '123494'
 
 if __name__=='__main__':
     data_folder = '/nfs/synology-tomodata/external_data/tomo/Diamond/I13'+\
-                  f'/2020_02/recon/{FILE_ID}/full_recon/20200206101055_123493/TiffSaver-tomo'
+                  f'/2020_02/recon/{FILE_ID}/full_recon/20200206140043_123494/TiffSaver-tomo'
 
     file_names = Path(data_folder).glob('*.tiff')
     file_names = list(file_names)
@@ -125,5 +136,5 @@ if __name__=='__main__':
         print(f'{i+1} out of {N_fn}')
     
     img3d_bin=np.asarray(img3d_bin)
-    print(f'porosity: {FILE_ID}', np.ones(img3d_bin)/img3d_bin.size)
     save(img3d_bin, f'{FILE_ID}.h5')
+    #print(f'porosity: {FILE_ID}', np.ones(img3d_bin)/img3d_bin.size)
