@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 from helper import crop
 from scipy.ndimage import zoom
 from scipy.ndimage.morphology import binary_closing
-from skimage.morphology import disk
+from skimage.morphology import disk, ball
 from file_paths import get_path
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -115,25 +115,61 @@ def get_2d_mask(img2d, pad_width = 35, disk_radius=35):
     return crop(zoom(img_mask, 10, order=1), img2d.shape)
 
 
-FILE_ID = '123494'
+def get_3d_mask(img3d, pad_width = 35, disk_radius=35):
+    merged_img = zoom(img3d, 0.1, order=1)
+    result_paded = np.pad(merged_img,pad_width=((pad_width,pad_width), (pad_width,pad_width), (pad_width,pad_width)), mode='constant')
+
+    img_mask = [binary_closing(img, structure=disk(disk_radius)) for img in result_paded]
+    return crop(zoom(img_mask, 10, order=1), img3d.shape)
+
+
+# FILE_ID = '123493' good
+# FILE_ID = '123494' good (mask needed)
+# FILE_ID = '123495' good
+# FILE_ID = '123496' good (mask needed)
+# FILE_ID = '123497' good
+# FILE_ID = '123498' good (mask needed)
+# FILE_ID = '123499' good (mask needed)
 
 if __name__=='__main__':
-    data_folder = get_path(FILE_ID)
+    # data_folder = get_path(FILE_ID)
 
-    file_names = Path(data_folder).glob('*.tiff')
-    file_names = list(file_names)
-    N_fn = len(file_names)
+    # file_names = Path(data_folder).glob('*.tiff')
+    # file_names = list(file_names)
+    # N_fn = len(file_names)
 
-    indexes_of_slices, k_values = read_k_values(filename=f'diamond {FILE_ID}.txt')
+    # indexes_of_slices, k_values = read_k_values(filename=f'diamond {FILE_ID}.txt')
 
-    indexes_of_slices, k_values = interpolate_k_values(indexes_of_slices, k_values, N_fn)
-    img3d_bin = []
-    for (file_name, i, k) in zip(file_names, indexes_of_slices, k_values):
-        img2d = np.array(Image.open(file_name))
-        img2d_bin = binarize_slice(img2d, k=k, mu=25e-8)
-        img3d_bin.append(img2d_bin)
-        print(f'{i+1} out of {N_fn}')
+    # indexes_of_slices, k_values = interpolate_k_values(indexes_of_slices, k_values, N_fn)
+    # img3d_bin = []
+    # for (file_name, i, k) in zip(file_names, indexes_of_slices, k_values):
+    #     img2d = np.array(Image.open(file_name))
+    #     img2d_bin = binarize_slice(img2d, k=k, mu=25e-8)
+    #     img3d_bin.append(img2d_bin)
+    #     print(f'{i+1} out of {N_fn}')
     
-    img3d_bin=np.asarray(img3d_bin)
-    save(img3d_bin, f'{FILE_ID}.h5')
-    #print(f'porosity: {FILE_ID}', np.ones(img3d_bin)/img3d_bin.size)
+    # img3d_bin=np.asarray(img3d_bin)
+    # save(img3d_bin, f'{FILE_ID}.h5')
+    # #print(f'porosity: {FILE_ID}', np.ones(img3d_bin)/img3d_bin.size)
+
+    sample_params = [('123493', False),
+                 ('123494', True),
+                 ('123495', False),
+                 ('123496', True),
+                 ('123497', False),
+                 ('123498', True),
+                 ('123499', True)]
+
+    for file_id, mask_needed in sample_params:
+        img3d = get_img(f'{file_id}.h5')
+        void_volume = np.sum(img3d)
+        if mask_needed:
+            print('mask_needed')
+            img3d_mask = get_3d_mask(img3d)
+            sample_volume = np.sum(img3d_mask)
+        else:
+            print('mask NOT needed')
+            sample_volume = img3d.shape[0] * img3d.shape[1] * img3d.shape[2]
+        porosity = void_volume / sample_volume
+        print(f'file_id: {file_id}, porosity: {porosity}')
+        print("===============================")
