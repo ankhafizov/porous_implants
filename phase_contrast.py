@@ -8,9 +8,12 @@ from skimage.filters import threshold_otsu
 from scipy.interpolate import interp1d
 from helper import crop
 from scipy.ndimage import zoom
-from scipy.ndimage.morphology import binary_closing
+from scipy.ndimage.morphology import binary_closing, binary_dilation
 from skimage.morphology import disk, ball
 from file_paths import get_path
+from skimage import measure
+from skimage.segmentation import flood_fill
+
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 PHANTOM_DB_FOLDER_NAME = 'database'
@@ -108,22 +111,47 @@ def interpolate_k_values(indexes_of_slices, k_values, max_number_of_slices):
     return xnew, f(xnew)
 
 
-def get_2d_mask(img2d, pad_width = 35, disk_radius=35, zoom_scale=0.1):
+def get_2d_mask_binary(img2d, pad_width = 35, disk_radius=35, zoom_scale=0.1):
     merged_img = zoom(img2d, zoom_scale, order=1)
     result_paded = np.pad(merged_img,pad_width=((pad_width,pad_width),(pad_width,pad_width)), mode='constant')
     img_mask = binary_closing(result_paded, structure=disk(disk_radius))
     return crop(zoom(img_mask, 1/zoom_scale, order=1), img2d.shape)
 
 
+def get_2d_mask_by_contour(img2d):
+    mask_to_untouch_boarders = np.zeros(img2d.shape, dtype=int)
+    mask_to_untouch_boarders[1:-1,1:-1] = 1
+    img2d = img2d * mask_to_untouch_boarders
 
-def calculate_porosity_with_3d_mask(img3d, pad_width = 35, disk_radius=35, zoom_scale=0.1):
+    # Find contours at a constant value of 0.8
+    contours = measure.find_contours(img2d, 0.8)
+    contour = sorted(contours, key=lambda x: len(x))[-1]
+
+    r_mask = np.zeros_like(img2d, dtype='bool')
+
+    # Create a contour image by using the contour coordinates rounded to their nearest integer value
+    r_mask[np.round(contour[:, 0]).astype('int'), np.round(contour[:, 1]).astype('int')] = 1
+
+    #close contours
+    r_mask = binary_dilation(r_mask)
+
+    r_mask = r_mask.astype(int)
+    mask = flood_fill(r_mask,  seed_point=tuple(np.asarray(r_mask.shape) // 2) ,new_value =1)
+    return mask
+
+
+def calculate_porosity_with_3d_mask(img3d,
+                                    get_2d_mask_func,
+                                    pad_width = 35,
+                                    disk_radius=35,
+                                    zoom_scale=0.1):
     # section_shape = img3d.shape[1:]
     # print('section_shape: ', section_shape)
     merged_img3d = zoom(img3d, zoom_scale, order=1)
     volume = 0
     body_volume = 0
     for img2d in merged_img3d:
-        mask = get_2d_mask(img2d, pad_width = 35, disk_radius=35, zoom_scale=1)
+        mask = get_2d_mask_func(img2d, pad_width = 35, disk_radius=35, zoom_scale=1)
         # mask = crop(zoom(mask, 1/zoom_scale, order=1), section_shape)
         volume += np.sum(mask)
         body_volume += np.sum(img2d)
@@ -159,12 +187,12 @@ if __name__=='__main__':
     # save(img3d_bin, f'{FILE_ID}.h5')
     # #print(f'porosity: {FILE_ID}', np.ones(img3d_bin)/img3d_bin.size)
 
-    sample_params = [('123493', False),
-                     ('123494', True),
-                     ('123495', False),
-                     ('123496', True),
-                     ('123497', False),
-                     ('123498', True),
+    sample_params = [# ('123493', False),
+                     #  ('123494', True),
+                     #  ('123495', False),
+                     #  ('123496', True),
+                     #  ('123497', False),
+                     #  ('123498', True),
                      ('123499', True)]
 
     for file_id, mask_needed in sample_params:
@@ -172,7 +200,7 @@ if __name__=='__main__':
         body_volume = np.sum(img3d)
         if mask_needed:
             print('mask_needed')
-            porosity = calculate_porosity_with_3d_mask(img3d)
+            porosity = calculate_porosity_with_3d_mask(img3d, get_2d_mask_by_contour)
         else:
             print('mask NOT needed')
             sample_volume = img3d.shape[0] * img3d.shape[1] * img3d.shape[2]
