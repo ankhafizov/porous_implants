@@ -154,6 +154,8 @@ def calculate_porosity_with_3d_mask(img3d,
         mask = get_2d_mask_func(img2d, pad_width = 35, disk_radius=35, zoom_scale=1)
         # mask = crop(zoom(mask, 1/zoom_scale, order=1), section_shape)
         volume += np.sum(mask)
+
+        img2d = img2d * mask
         body_volume += np.sum(img2d)
     return 1 - body_volume / volume
 
