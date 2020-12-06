@@ -151,7 +151,13 @@ def calculate_porosity_with_3d_mask(img3d,
     volume = 0
     body_volume = 0
     for img2d in merged_img3d:
-        mask = get_2d_mask_func(img2d, pad_width = 35, disk_radius=35, zoom_scale=1)
+        if get_2d_mask_func == get_2d_mask_binary:
+            mask = get_2d_mask_func(img2d, pad_width = 35, disk_radius=35, zoom_scale=1)
+        elif get_2d_mask_func == get_2d_mask_by_contour:
+            mask = get_2d_mask_func(img2d)
+        else:
+            raise ValueError("Such \"get_2d_mask_func\" does not exist")
+
         # mask = crop(zoom(mask, 1/zoom_scale, order=1), section_shape)
         volume += np.sum(mask)
 
