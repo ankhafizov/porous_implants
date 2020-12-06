@@ -150,7 +150,8 @@ def calculate_porosity_with_3d_mask(img3d,
     merged_img3d = zoom(img3d, zoom_scale, order=1)
     volume = 0
     body_volume = 0
-    for img2d in merged_img3d:
+    N = len(merged_img3d)
+    for i, img2d in enumerate(merged_img3d):
         if get_2d_mask_func == get_2d_mask_binary:
             mask = get_2d_mask_func(img2d, pad_width = 35, disk_radius=35, zoom_scale=1)
         elif get_2d_mask_func == get_2d_mask_by_contour:
@@ -163,6 +164,7 @@ def calculate_porosity_with_3d_mask(img3d,
 
         img2d = img2d * mask
         body_volume += np.sum(img2d)
+        print(f"{i+1} slice of {N}: porosity = {1 - body_volume / volume}")
     return 1 - body_volume / volume
 
 
