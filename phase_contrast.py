@@ -115,13 +115,6 @@ def get_2d_mask(img2d, pad_width = 35, disk_radius=35, zoom_scale=0.1):
     return crop(zoom(img_mask, 1/zoom_scale, order=1), img2d.shape)
 
 
-def get_3d_mask(img3d, pad_width = 35, disk_radius=35):
-    merged_img = zoom(img3d, 0.1, order=1)
-    result_paded = np.pad(merged_img,pad_width=((pad_width,pad_width), (pad_width,pad_width), (pad_width,pad_width)), mode='constant')
-
-    img_mask = [binary_closing(img, structure=disk(disk_radius)) for img in result_paded]
-    return crop(zoom(img_mask, 10, order=1), img3d.shape)
-
 
 def calculate_porosity_with_3d_mask(img3d, pad_width = 35, disk_radius=35, zoom_scale=0.1):
     # section_shape = img3d.shape[1:]
