@@ -147,7 +147,7 @@ def calculate_porosity_with_3d_mask(img3d,
                                     zoom_scale=0.1):
     # section_shape = img3d.shape[1:]
     # print('section_shape: ', section_shape)
-    merged_img3d = zoom(img3d, zoom_scale, order=1)
+    merged_img3d = zoom(img3d, zoom_scale, order=1) if not zoom_scale ==1 else img3d
     volume = 0
     body_volume = 0
     N = len(merged_img3d)
@@ -210,7 +210,7 @@ if __name__=='__main__':
         body_volume = np.sum(img3d)
         if mask_needed:
             print('mask_needed')
-            porosity = calculate_porosity_with_3d_mask(img3d, get_2d_mask_by_contour)
+            porosity = calculate_porosity_with_3d_mask(img3d, get_2d_mask_by_contour, zoom_scale=1)
         else:
             print('mask NOT needed')
             sample_volume = img3d.shape[0] * img3d.shape[1] * img3d.shape[2]
