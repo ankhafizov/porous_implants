@@ -6,13 +6,14 @@ import h5py
 from scipy.signal import fftconvolve
 from skimage.filters import threshold_otsu
 from scipy.interpolate import interp1d
-from helper import crop
+from helper import crop, write_item_to_file
 from scipy.ndimage import zoom
-from scipy.ndimage.morphology import binary_closing, binary_dilation
+from scipy.ndimage.morphology import binary_closing, binary_fill_holes, binary_dilation, distance_transform_edt
 from skimage.morphology import disk, ball
 from file_paths import get_path
 from skimage import measure
 from skimage.segmentation import flood_fill
+from skimage.morphology import extrema
 
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -111,7 +112,20 @@ def interpolate_k_values(indexes_of_slices, k_values, max_number_of_slices):
     return xnew, f(xnew)
 
 
-def get_2d_mask_binary(img2d, pad_width = 35, disk_radius=35, zoom_scale=0.1):
+def binary_fill_boarders(img, value=0, width=5):
+    if value == 0:
+        mask = np.zeros(img.shape, dtype=int)
+        mask[:, width:-width] = 1
+        return img * mask
+    elif value == 1:
+        mask = np.ones(img.shape, dtype=int)
+        mask[:, width:-width] = 0
+        return img + mask
+    else:
+        raise ValueError("only values 0 and 1 are accepted")
+
+
+def get_2d_mask_binary_closing(img2d, pad_width = 35, disk_radius=35, zoom_scale=0.1):
     merged_img = zoom(img2d, zoom_scale, order=1)
     result_paded = np.pad(merged_img,pad_width=((pad_width,pad_width),(pad_width,pad_width)), mode='constant')
     img_mask = binary_closing(result_paded, structure=disk(disk_radius))
@@ -140,11 +154,36 @@ def get_2d_mask_by_contour(img2d):
     return mask
 
 
+def get_2d_mask_by_filling_holes(img2d, maximum_limit=35):
+    width_zero = 20
+    binary_dilation_size = 10
+    img2d = binary_fill_boarders(img2d, value=1)
+    img2d_without_holes = binary_fill_holes(binary_dilation(img2d, structure=disk(binary_dilation_size)))
+    img2d_without_holes = binary_fill_boarders(img2d_without_holes, value=0, width=width_zero)
+
+    ddt = distance_transform_edt(~img2d_without_holes.astype(bool))
+
+    maxima_coords = extrema.h_maxima(ddt, h=0)
+    maxima_distance_values = ddt*maxima_coords
+    mask = maxima_distance_values < maximum_limit
+
+    maxima_distance_values_limited = maxima_distance_values * mask
+    maxima_coords_limited = maxima_coords * mask
+
+    spots = binary_dilation(maxima_coords_limited, structure=disk(np.max(maxima_distance_values_limited)))
+    img2d_without_holes = binary_fill_boarders(img2d_without_holes, value=1, width=1)
+    mask_pores = binary_fill_holes(img2d_without_holes + spots)
+    mask_pores = binary_fill_boarders(mask_pores, value=0, width=1)
+
+    return mask_pores
+
+
 def calculate_porosity_with_3d_mask(img3d,
                                     get_2d_mask_func,
                                     pad_width = 35,
                                     disk_radius=35,
-                                    zoom_scale=0.1):
+                                    zoom_scale=0.1,
+                                    file_id='11111'):
     # section_shape = img3d.shape[1:]
     # print('section_shape: ', section_shape)
     merged_img3d = zoom(img3d, zoom_scale, order=1) if not zoom_scale ==1 else img3d
@@ -152,9 +191,11 @@ def calculate_porosity_with_3d_mask(img3d,
     body_volume = 0
     N = len(merged_img3d)
     for i, img2d in enumerate(merged_img3d):
-        if get_2d_mask_func == get_2d_mask_binary:
+        if get_2d_mask_func == get_2d_mask_binary_closing:
             mask = get_2d_mask_func(img2d, pad_width = 35, disk_radius=35, zoom_scale=1)
         elif get_2d_mask_func == get_2d_mask_by_contour:
+            mask = get_2d_mask_func(img2d)
+        elif get_2d_mask_func == get_2d_mask_by_filling_holes:
             mask = get_2d_mask_func(img2d)
         else:
             raise ValueError("Such \"get_2d_mask_func\" does not exist")
@@ -164,6 +205,11 @@ def calculate_porosity_with_3d_mask(img3d,
 
         img2d = img2d * mask
         body_volume += np.sum(img2d)
+        
+        db_folder = os.path.join(SCRIPT_PATH, TXT_FOULDER_NAME)
+        write_item_to_file(f"{i+1} slice of {N}: porosity = {1 - body_volume / volume}",
+                           f"{file_id} porosities",
+                           db_folder)
         print(f"{i+1} slice of {N}: porosity = {1 - body_volume / volume}")
     return 1 - body_volume / volume
 
@@ -198,19 +244,23 @@ if __name__=='__main__':
     # #print(f'porosity: {FILE_ID}', np.ones(img3d_bin)/img3d_bin.size)
 
     sample_params = [# ('123493', False),
-                     #  ('123494', True),
-                     #  ('123495', False),
-                     #  ('123496', True),
-                     #  ('123497', False),
-                     #  ('123498', True),
-                     ('123499', True)]
+                     ('123494', True),
+                     # ('123495', False),
+                     # ('123496', True),
+                     # ('123497', False),
+                     # ('123498', True),
+                     # ('123499', True)
+                    ]
 
     for file_id, mask_needed in sample_params:
         img3d = get_img(f'{file_id}.h5')
         body_volume = np.sum(img3d)
         if mask_needed:
             print('mask_needed')
-            porosity = calculate_porosity_with_3d_mask(img3d, get_2d_mask_by_contour, zoom_scale=1)
+            porosity = calculate_porosity_with_3d_mask(img3d,
+                                                       get_2d_mask_by_filling_holes,
+                                                       zoom_scale=1,
+                                                       file_id=file_id)
         else:
             print('mask NOT needed')
             sample_volume = img3d.shape[0] * img3d.shape[1] * img3d.shape[2]
