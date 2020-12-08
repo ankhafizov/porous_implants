@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 def crop(img, shape, center=None):
     def left_edge(index):
@@ -22,3 +23,13 @@ def crop(img, shape, center=None):
     )
 
     return img[tuple(ranges)]
+
+
+def write_item_to_file(value, filename, db_folder):
+    if not os.path.isdir(db_folder):
+        os.mkdir(db_folder)
+
+    file_path = os.path.join(db_folder, filename)
+    file_txt = open(file_path,"a")
+    file_txt.write(f"{value} \n")
+    file_txt.close()
