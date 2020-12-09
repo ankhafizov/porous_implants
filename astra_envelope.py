@@ -175,13 +175,19 @@ def astra_fp_2d_parallel(volume, angles):
     return rec
 
 
-def astra_fp_2d_fan(volume, angles, source_object, object_det):
+def astra_fp_2d_fan(volume,
+                    angles,
+                    source_object,
+                    object_det,
+                    detector_size=None
+                    ):
     """
     :param volume:
     :param angles: degrees
     :return:
     """
-    detector_size = volume.shape[1]
+    if not detector_size:
+        detector_size = volume.shape[1]
     proj_geom = build_proj_geometry_fan_2d(detector_size, angles, source_object, object_det)
     rec = astra_fp_2d(volume, proj_geom)
     return rec
