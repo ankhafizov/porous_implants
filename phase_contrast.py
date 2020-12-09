@@ -178,12 +178,19 @@ def get_2d_mask_by_filling_holes(img2d, maximum_limit=35):
     return mask_pores
 
 
+def get_2d_rectangular_mask_horizontal(img2d, margin):
+    mask = np.zeros(img2d.shape, dtype=int)
+    mask[margin:-margin, :] = 1
+    return mask
+
+
 def calculate_porosity_with_3d_mask(img3d,
                                     get_2d_mask_func,
                                     pad_width = 35,
                                     disk_radius=35,
                                     zoom_scale=0.1,
-                                    file_id='11111'):
+                                    file_id='11111',
+                                    margin=100):
     # section_shape = img3d.shape[1:]
     # print('section_shape: ', section_shape)
     merged_img3d = zoom(img3d, zoom_scale, order=1) if not zoom_scale ==1 else img3d
@@ -197,6 +204,8 @@ def calculate_porosity_with_3d_mask(img3d,
             mask = get_2d_mask_func(img2d)
         elif get_2d_mask_func == get_2d_mask_by_filling_holes:
             mask = get_2d_mask_func(img2d)
+        elif get_2d_mask_func == get_2d_rectangular_mask_horizontal:
+            mask = get_2d_rectangular_mask_horizontal(img2d, margin)
         else:
             raise ValueError("Such \"get_2d_mask_func\" does not exist")
 
@@ -244,10 +253,10 @@ if __name__=='__main__':
     # #print(f'porosity: {FILE_ID}', np.ones(img3d_bin)/img3d_bin.size)
 
     sample_params = [# ('123493', False),
-                     ('123494', True),
+                     # ('123494', True),
                      # ('123495', False),
                      # ('123496', True),
-                     # ('123497', False),
+                     ('123497', True),
                      # ('123498', True),
                      # ('123499', True)
                     ]
@@ -258,9 +267,10 @@ if __name__=='__main__':
         if mask_needed:
             print('mask_needed')
             porosity = calculate_porosity_with_3d_mask(img3d,
-                                                       get_2d_mask_by_filling_holes,
+                                                       get_2d_rectangular_mask_horizontal,
                                                        zoom_scale=1,
-                                                       file_id=file_id)
+                                                       file_id=file_id,
+                                                       margin=100)
         else:
             print('mask NOT needed')
             sample_volume = img3d.shape[0] * img3d.shape[1] * img3d.shape[2]
