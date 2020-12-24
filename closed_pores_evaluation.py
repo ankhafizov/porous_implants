@@ -91,6 +91,8 @@ def plot_pore_size_histogram(closed_pores_mask,
                              min_x_value=0,
                              log_scale=True,
                              pixel_size_mkm=None,
+                             add_median=False,
+                             add_mean=False,
                              save_plot=False):
     """
     function returns a histogram of closed pores' sizes for the
@@ -128,9 +130,20 @@ def plot_pore_size_histogram(closed_pores_mask,
         min_x_value = np.min(pore_size_distribution)
 
     bins = np.linspace(min_x_value-1, max_x_value, num_of_bins+1)
+    
+    stats_median, stats_mean = "", ""
+    if add_median:
+        median_of_distribution = np.median(pore_size_distribution[pore_size_distribution > min_x_value])
+        stats_median = f'Median {size_type} = {median_of_distribution:.2f} {unit_name}\n'
+        ax.axvline(median_of_distribution, color="red", label="median")
+    if add_mean:
+        mean_of_distribution = np.mean(pore_size_distribution[pore_size_distribution > min_x_value])
+        stats_mean = f'Mean {size_type} = {mean_of_distribution:.2f} {unit_name}'
+        ax.axvline(mean_of_distribution, color="green", label="mean")
 
-    stats = (f'MAX pore {size_type} = {max_x_value:.0f} {unit_name}\n'
-             f'MIN pore {size_type} = {min_x_value:.0f} {unit_name}')
+    stats = (f'MAX pore {size_type} = {max_x_value:.2f} {unit_name}\n'
+             f'MIN pore {size_type} = {min_x_value:.2f} {unit_name}\n') + stats_median + stats_mean
+
     bbox = dict(boxstyle='round', fc='blanchedalmond', ec='orange', alpha=0.35)
     ax.text(0.95, 0.5, stats, fontsize=9, bbox=bbox,
             transform=ax.transAxes, horizontalalignment='right')
@@ -143,6 +156,9 @@ def plot_pore_size_histogram(closed_pores_mask,
     ax.set_title(f'pores {size_type} distribution | connectivity number={structure_neighbors_num}')
     ax.set_xlabel(f'{size_type} in {unit_name}')
     ax.set_ylabel('count')
+
+    if add_mean or add_median:
+        ax.legend()
     ax.grid()
 
     if save_plot:
