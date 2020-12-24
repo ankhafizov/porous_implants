@@ -90,12 +90,19 @@ def plot_pore_size_histogram(closed_pores_mask,
                              max_x_value=None,
                              min_x_value=0,
                              log_scale=True,
+                             pixel_size_mkm=None,
                              save_plot=False):
     """
     function returns a histogram of closed pores' sizes for the
     chosen neighbor voxels configuration.
     Note: size_type must be either "volume" or "diameter"
     """
+    if pixel_size_mkm:
+        unit_name="microns"
+    else:
+        unit_name="voxels"
+        pixel_size_mkm=1
+
     figure, ax = plt.subplots(figsize=(10, 10))
 
     total_num_of_pores = np.sum(closed_pores_mask)
@@ -112,7 +119,9 @@ def plot_pore_size_histogram(closed_pores_mask,
     elif size_type == "diameter":
         pore_size_distribution = recount_volumes_to_diameters(pore_size_distribution,
                                                               closed_pores_mask.ndim)
-
+    
+    pore_size_distribution = pore_size_distribution * pixel_size_mkm
+    
     if not max_x_value:
         max_x_value = np.max(pore_size_distribution)
     if not min_x_value:
@@ -120,9 +129,8 @@ def plot_pore_size_histogram(closed_pores_mask,
 
     bins = np.linspace(min_x_value-1, max_x_value, num_of_bins+1)
 
-    stats = (f'total_num_of_pores = {total_num_of_pores} [voxels]\n'
-             f'MAX pore {size_type} = {max_x_value:.0f}\n'
-             f'MIN pore {size_type} = {min_x_value:.0f}')
+    stats = (f'MAX pore {size_type} = {max_x_value:.0f} {unit_name}\n'
+             f'MIN pore {size_type} = {min_x_value:.0f} {unit_name}')
     bbox = dict(boxstyle='round', fc='blanchedalmond', ec='orange', alpha=0.35)
     ax.text(0.95, 0.5, stats, fontsize=9, bbox=bbox,
             transform=ax.transAxes, horizontalalignment='right')
@@ -132,8 +140,9 @@ def plot_pore_size_histogram(closed_pores_mask,
             log=log_scale,
             edgecolor='k')
 
-    ax.set_title(f'pores_{size_type}_distribution | connectivity number={structure_neighbors_num}')
-    ax.set_xlabel(f'{size_type} in voxels')
+    ax.set_title(f'pores {size_type} distribution | connectivity number={structure_neighbors_num}')
+    ax.set_xlabel(f'{size_type} in {unit_name}')
+    ax.set_ylabel('count')
     ax.grid()
 
     if save_plot:
