@@ -38,33 +38,58 @@ def get_structure(neighbors_num=6):
     return structure
 
 
-def get_closed_pores(bin_3d_volume, structure_neighbors_num=6):
+def filter_pores_mask(pore_mask_img,
+                      lowest_value,
+                      highest_value
+                      ):
+    labeled_img, _ = label(pore_mask_img)
+    unique_labels, unique_counts = np.unique(labeled_img,
+                                             return_counts=True)
+    accepted_labels = unique_labels[np.logical_and(unique_labels > 0,
+                                                   unique_counts < highest_value,
+                                                   unique_counts > lowest_value)]
+
+    mask=np.zeros(pore_mask_img.shape)
+    for elem in accepted_labels: 
+        mask += np.where(elem == labeled_img, True, False)
+    return mask
+
+
+def get_closed_pores(bin_3d_img,
+                     structure_neighbors_num=6):
     """
-    function returns a bin_3d_volume of closed pores for the
+    function returns a bin_3d_img of closed pores for the
     chosen neighbor voxels configuration
 
     """
-    if not np.asarray(bin_3d_volume).dtype == bool:
-        bin_3d_volume = bin_3d_volume.astype(bool)
+    if not np.asarray(bin_3d_img).dtype == bool:
+        bin_3d_img = bin_3d_img.astype(bool)
 
     structure = get_structure(structure_neighbors_num)
-    connected_components, _ = label(bin_3d_volume, structure)
+    connected_components, _ = label(bin_3d_img, structure)
     levitating_volume = clear_border(connected_components) > 0
 
     return levitating_volume
 
 
-def recount_volumes_to_diameters(volumes):
+def recount_volumes_to_diameters(volumes, space_dim=2):
     volumes = np.asarray(volumes)
-    diameters = 2 * np.power((volumes*3)/(4*np.pi), 1/3)
+    if space_dim == 3:
+        diameters = 2 * np.power((volumes*3)/(4*np.pi), 1/3)
+    elif  space_dim == 2:
+        diameters = 2 * np.power((volumes / np.pi), 1/2)
+    else:
+        raise ValueError("no such space. Should be \"2d\" or \"3d\"")
     return diameters
 
 
-def plot_pore_size_histogram(bin_3d_volume,
+def plot_pore_size_histogram(closed_pores_mask,
                              structure_neighbors_num=6,
                              size_type="volume",
                              num_of_bins=35,
                              max_x_value=None,
+                             min_x_value=0,
+                             log_scale=True,
                              save_plot=False):
     """
     function returns a histogram of closed pores' sizes for the
@@ -73,37 +98,38 @@ def plot_pore_size_histogram(bin_3d_volume,
     """
     figure, ax = plt.subplots(figsize=(10, 10))
 
-    lv = get_closed_pores(bin_3d_volume, structure_neighbors_num)
-    total_num_of_pores = np.sum(lv)
+    total_num_of_pores = np.sum(closed_pores_mask)
     do_pores_exist = total_num_of_pores > 0
 
     if not do_pores_exist:
         ax.set_title('No pores detected', color="red")
         return None
 
-    pore_size_distribution = get_pore_volume_distribution(lv,
+    pore_size_distribution = get_pore_volume_distribution(closed_pores_mask,
                                                           structure_neighbors_num)
     if size_type == "volume":
         pass
     elif size_type == "diameter":
-        pore_size_distribution = recount_volumes_to_diameters(pore_size_distribution)
-
+        pore_size_distribution = recount_volumes_to_diameters(pore_size_distribution,
+                                                              closed_pores_mask.ndim)
 
     if not max_x_value:
         max_x_value = np.max(pore_size_distribution)
+    if not min_x_value:
+        min_x_value = np.min(pore_size_distribution)
 
-    bins = np.linspace(0, max_x_value, num_of_bins+1)
+    bins = np.linspace(min_x_value-1, max_x_value, num_of_bins+1)
 
     stats = (f'total_num_of_pores = {total_num_of_pores} [voxels]\n'
-             f'MAX pore {size_type} = {np.max(pore_size_distribution):.0f}\n'
-             f'MIN pore {size_type} = {np.min(pore_size_distribution):.0f}')
+             f'MAX pore {size_type} = {max_x_value:.0f}\n'
+             f'MIN pore {size_type} = {min_x_value:.0f}')
     bbox = dict(boxstyle='round', fc='blanchedalmond', ec='orange', alpha=0.35)
-    ax.text(0.95, 0.3, stats, fontsize=9, bbox=bbox,
+    ax.text(0.95, 0.5, stats, fontsize=9, bbox=bbox,
             transform=ax.transAxes, horizontalalignment='right')
 
     ax.hist(pore_size_distribution,
             bins=bins,
-            log=True,
+            log=log_scale,
             edgecolor='k')
 
     ax.set_title(f'pores_{size_type}_distribution | connectivity number={structure_neighbors_num}')
@@ -115,8 +141,11 @@ def plot_pore_size_histogram(bin_3d_volume,
 
 
 def get_pore_volume_distribution(levitatting_volume, structure_neighbors_num):
+    structure = get_structure(neighbors_num=structure_neighbors_num)
+    if levitatting_volume.ndim == 2:
+        structure = structure[1]
     connected_components, _ = label(levitatting_volume,
-                                    get_structure(neighbors_num=structure_neighbors_num))
+                                    structure)
     pore_volume_distribution = np.unique(connected_components, return_counts=True)[1][1:]
 
     return pore_volume_distribution
