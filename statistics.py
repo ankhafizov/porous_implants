@@ -128,9 +128,9 @@ if __name__=='__main__':
 
             img2d_grey = get_2d_slice_of_sample_from_database(num, file_id=file_id)
             img2d_pores = get_img2d_pores(img2d_grey,
-                                        percentile = percentile,
-                                        min_pore_volume = min_pore_volume,
-                                        max_pore_volume = max_pore_volume)
+                                          percentile = percentile,
+                                          min_pore_volume = min_pore_volume,
+                                          max_pore_volume = max_pore_volume)
             total_mean_pore_volume_in_layers.append(np.sum(img2d_pores))
             hist, bins = calc_histogram(img2d_pores,
                                         pixel_size_mkm,
