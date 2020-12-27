@@ -38,8 +38,9 @@ def calc_histogram(img2d_pores,
                    max_x_value=None):
     pore_volume_distribution = cpe.get_pore_volume_distribution(img2d_pores, 6) * pixel_size_mkm
     if size_type == "diameter":
+        print("max: ", np.max(pore_volume_distribution))
         pore_volume_distribution = cpe.recount_volumes_to_diameters(pore_volume_distribution,
-                                                                   img2d_pores.ndim)
+                                                                    img2d_pores.ndim)
     elif size_type == "volume":
         pass
     else:
@@ -49,6 +50,14 @@ def calc_histogram(img2d_pores,
         max_x_value = np.max(pore_volume_distribution)
     bins = np.linspace(min_x_value-1, max_x_value, num_of_bins+1)
     return np.histogram(pore_volume_distribution, bins=bins)
+
+
+def count_mean_from_hist(y, bins):
+    bin_centers = (bins[1:] + bins[:-1])/2
+    distr = []
+    for y_elem, bin_center in zip(y, bin_centers):
+        distr += [bin_center] * int(y_elem)
+    return np.mean(distr)
 
 
 def plot_error_hist(hist, err_hist, bins, ax, stats=None, bbox_fontsize=15):
@@ -120,9 +129,8 @@ if __name__=='__main__':
     hist_mean = np.mean(hists, axis=0)
     hist_std = np.std(hists, axis=0) if size_of_sampling>1 else 0
 
-    # median_of_distribution=np.median(hist_mean)
-    mean_of_distribution=np.mean(hist_mean)
-    # ax.axvline(median_of_distribution, color="red", label=f"median={median_of_distribution}")
+    mean_of_distribution = count_mean_from_hist(hist_mean, bins)
+
     ax.axvline(mean_of_distribution, color="orange", label=f"mean={mean_of_distribution}")
     stats = dict(unit_name="mkm",
                  sample_size=size_of_sampling,
