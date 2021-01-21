@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.ndimage import label
+from scipy.ndimage import label as label_image
 from skimage.segmentation import clear_border
 
 from data_manager import save_plot as save
@@ -41,7 +41,7 @@ def get_structure(neighbors_num=6):
 def filter_pores_mask(pore_mask_img,
                       lowest_value,
                       highest_value=None):
-    labeled_img, _ = label(pore_mask_img)
+    labeled_img, _ = label_image(pore_mask_img)
     unique_labels, unique_counts = np.unique(labeled_img,
                                              return_counts=True)
 
@@ -66,7 +66,7 @@ def create_mask_layer_for_label(labeled_img, label):
 
 def find_mask_longest_contours(bin_img_with_contours,
                                max_number_of_contors):
-    labeled_img, _ = label(bin_img_with_contours)
+    labeled_img, _ = label_image(bin_img_with_contours)
     unique_labels, unique_counts = np.unique(labeled_img,
                                              return_counts=True)
     
@@ -100,7 +100,7 @@ def get_closed_pores(bin_3d_img,
         bin_3d_img = bin_3d_img.astype(bool)
 
     structure = get_structure(structure_neighbors_num)
-    connected_components, _ = label(bin_3d_img, structure)
+    connected_components, _ = label_image(bin_3d_img, structure)
     levitating_volume = clear_border(connected_components) > 0
 
     return levitating_volume
@@ -203,8 +203,8 @@ def get_pore_volume_distribution(levitatting_volume, structure_neighbors_num):
     structure = get_structure(neighbors_num=structure_neighbors_num)
     if levitatting_volume.ndim == 2:
         structure = structure[1]
-    connected_components, _ = label(levitatting_volume,
-                                    structure)
+    connected_components, _ = label_image(levitatting_volume,
+                                          structure)
     pore_volume_distribution = np.unique(connected_components, return_counts=True)[1][1:]
 
     return pore_volume_distribution
