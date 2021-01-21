@@ -52,8 +52,35 @@ def filter_pores_mask(pore_mask_img,
                                                    unique_counts > lowest_value)]
 
     mask=np.zeros(pore_mask_img.shape)
-    for elem in accepted_labels: 
+    for elem in accepted_labels:
+        # TODO: replace with create_mask_layer_for_label
         mask += np.where(elem == labeled_img, True, False)
+    return mask
+
+
+def create_mask_layer_for_label(labeled_img, label):
+    mask = np.zeros(labeled_img.shape)
+    mask +=  np.where(label == labeled_img, True, False)
+    return mask.astype(bool)
+
+
+def find_mask_longest_contours(bin_img_with_contours,
+                               max_number_of_contors):
+    labeled_img, _ = label(bin_img_with_contours)
+    unique_labels, unique_counts = np.unique(labeled_img,
+                                             return_counts=True)
+    
+    longest_contours_indexes = np.flip(unique_counts.argsort())
+
+    if len(longest_contours_indexes) > max_number_of_contours:
+        max_number_of_contours = len(longest_contours_indexes)
+    longest_contours_labels = unique_labels[longest_contours_indexes][0:max_number_of_contours]
+
+    mask = np.zeros(labeled_img.shape, dtype=bool)
+    for label in longest_contours_labels:
+        if label == 0:
+            continue
+        mask = np.logical_or(mask, create_mask_layer_for_label(labeled_img, label))
     return mask
 
 
