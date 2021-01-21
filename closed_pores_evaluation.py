@@ -40,11 +40,13 @@ def get_structure(neighbors_num=6):
 
 def filter_pores_mask(pore_mask_img,
                       lowest_value,
-                      highest_value
-                      ):
+                      highest_value=None):
     labeled_img, _ = label(pore_mask_img)
     unique_labels, unique_counts = np.unique(labeled_img,
                                              return_counts=True)
+
+    if highest_value == None:
+        highest_value = np.max(unique_counts)+1
     accepted_labels = unique_labels[np.logical_and(unique_labels > 0,
                                                    unique_counts < highest_value,
                                                    unique_counts > lowest_value)]
