@@ -76,12 +76,17 @@ def find_mask_longest_contours(bin_img_with_contours,
         max_number_of_contours = len(longest_contours_indexes)
     longest_contours_labels = unique_labels[longest_contours_indexes][0:max_number_of_contours]
 
-    mask = np.zeros(labeled_img.shape, dtype=bool)
+    contour_mask = np.zeros(labeled_img.shape, dtype=bool)
     for label in longest_contours_labels:
         if label == 0:
             continue
-        mask = np.logical_or(mask, create_mask_layer_for_label(labeled_img, label))
-    return mask
+        contour_mask = np.logical_or(contour_mask, create_mask_layer_for_label(labeled_img, label))
+    return contour_mask
+
+
+def hide_contours_in_image(img, contour_mask):
+    contour_mask = contour_mask.astype(bool)
+    return contour_mask*np.mean(img) + img * (~contour_mask)
 
 
 def get_closed_pores(bin_3d_img,
