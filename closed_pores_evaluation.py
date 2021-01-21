@@ -65,17 +65,26 @@ def create_mask_layer_for_label(labeled_img, label):
 
 
 def find_mask_longest_contours(bin_img_with_contours,
-                               max_number_of_contors):
+                               filter_by_contour_length=False,
+                               max_number_of_contours=None,
+                               min_contour_length=None):
     labeled_img, _ = label_image(bin_img_with_contours)
     unique_labels, unique_counts = np.unique(labeled_img,
                                              return_counts=True)
     
     longest_contours_indexes = np.flip(unique_counts.argsort())
 
-    if len(longest_contours_indexes) > max_number_of_contours:
-        max_number_of_contours = len(longest_contours_indexes)
-    longest_contours_labels = unique_labels[longest_contours_indexes][0:max_number_of_contours]
+    if not filter_by_contour_length:
+        if len(longest_contours_indexes) < max_number_of_contours:
+            max_number_of_contours = len(longest_contours_indexes)
+        longest_contours_labels = unique_labels[longest_contours_indexes][0:max_number_of_contours]
+    else:
+        longest_contours_lens = unique_counts[longest_contours_indexes][0:max_number_of_contours]
+        longest_contours_lens_lower_max = longest_contours_lens > min_contour_length
+        longest_contours_indexes_sampled = longest_contours_indexes[longest_contours_lens_lower_max]
+        longest_contours_labels = unique_labels[longest_contours_indexes_sampled]
 
+    print("number of selected contour: ", len(longest_contours_labels))
     contour_mask = np.zeros(labeled_img.shape, dtype=bool)
     for label in longest_contours_labels:
         if label == 0:
