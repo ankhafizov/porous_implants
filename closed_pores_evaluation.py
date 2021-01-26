@@ -226,7 +226,7 @@ def get_pore_volume_distribution(levitatting_volume, structure_neighbors_num):
     return pore_volume_distribution
 
 
-def segment_small_pores(img2d_gray, min_large_contour_length=3000):
+def remove_large_contours(img2d_gray, min_large_contour_length=3000):
     img_equalized = exposure.equalize_hist(img2d_gray)
     img_equalized_binarized = img_equalized > 0.5
 
@@ -245,15 +245,15 @@ def preview_small_pores_detection_by_fragment(img2d_gray,
     fig, axes = plt.subplots(ncols=3, nrows=plots, figsize=(21, 7*plots), constrained_layout=True)
     axes= axes.ravel()
 
-    img_without_big_contours = segment_small_pores(img2d_gray, min_large_contour_length=3000)
-    global_thresh = np.percentile(img_without_big_contours.ravel(), percentile)
+    img_without_large_contours = remove_large_contours(img2d_gray, min_large_contour_length=3000)
+    global_thresh = np.percentile(img_without_large_contours.ravel(), percentile)
 
     for i, _ in enumerate(axes):
         if i % 3 == 0:
             center_coords = np.asarray([np.random.randint(window_size//2+1, img2d_gray.shape[0]-window_size//2-1),
                                         np.random.randint(window_size//2+1, img2d_gray.shape[0]-window_size//2-1)])              
             img_2d_gray_frag = crop(img2d_gray, (window_size, window_size), center_coords)
-            img_without_contours_frag = crop(img_without_big_contours, (window_size, window_size), center_coords)
+            img_without_contours_frag = crop(img_without_large_contours, (window_size, window_size), center_coords)
             
             # ========================================
             axes[i].imshow(img_2d_gray_frag, cmap=plt.cm.gray)
@@ -289,16 +289,16 @@ def preview_small_pores_detection_by_fragment(img2d_gray,
 
 
 def preview_small_pores_detection_full(img2d_gray,
-                                       percentile=3,
+                                       percentile=2.5,
                                        min_large_contour_length=2000,
-                                       window_size=200):
+                                       window_size=100):
     
     fig, axes = plt.subplots(ncols=2, figsize=(14, 7), constrained_layout=True)
     [ax.axis("off") for ax in axes]
 
-    img_without_big_contours = segment_small_pores(img2d_gray,
+    img_without_large_contours = remove_large_contours(img2d_gray,
                                                    min_large_contour_length=min_large_contour_length)
-    global_thresh = np.percentile(img_without_big_contours.ravel(), percentile)
+    global_thresh = np.percentile(img_without_large_contours.ravel(), percentile)
 
     #TODO: make image sampling more flexible
     count_of_center_points = np.min(img2d_gray.shape) // window_size
@@ -308,7 +308,7 @@ def preview_small_pores_detection_full(img2d_gray,
     for x in np.arange(count_of_center_points) + 0.5:
         for y in np.arange(count_of_center_points) + 0.5:
             center_coords = np.ceil(np.asarray([x, y]) * window_size).astype(int)
-            img_without_contours_frag = crop(img_without_big_contours, (window_size, window_size), center_coords)
+            img_without_contours_frag = crop(img_without_large_contours, (window_size, window_size), center_coords)
             
             # new approach
             img_without_contours_frag = median(img_without_contours_frag)
@@ -336,12 +336,49 @@ def preview_small_pores_detection_full(img2d_gray,
     return fig
 
 
+def get_small_pores_mask(img2d_gray,
+                         percentile=2.5,
+                         min_large_contour_length=2000,
+                         window_size=100):
+
+    img_without_large_contours = remove_large_contours(img2d_gray,
+                                                       min_large_contour_length=min_large_contour_length)
+    global_thresh = np.percentile(img_without_large_contours.ravel(), percentile)
+
+    #TODO: make image sampling more flexible
+    count_of_center_points = np.min(img2d_gray.shape) // window_size
+    mask_frame = np.zeros([count_of_center_points*window_size]*2, dtype=int)
+
+    for x in np.arange(count_of_center_points) + 0.5:
+        for y in np.arange(count_of_center_points) + 0.5:
+            center_coords = np.ceil(np.asarray([x, y]) * window_size).astype(int)
+            img_without_contours_frag = crop(img_without_large_contours, (window_size, window_size), center_coords)
+            
+            # new approach
+            img_without_contours_frag = median(img_without_contours_frag)
+
+            min_brightness = np.min(img_without_contours_frag)
+            max_brightness = np.max(img_without_contours_frag)
+            
+            local_thresh = min_brightness + (max_brightness - min_brightness) * 0.5
+            if local_thresh > global_thresh:
+                local_thresh = global_thresh
+
+            bin_cropped_fragment = img_without_contours_frag > local_thresh
+            paste(mask_frame, bin_cropped_fragment, center_coords)
+    
+    return mask_frame
+
+
 import statistics as stat
 if __name__=='__main__':
     file_id='123497'
     num = 100 # 320
     img2d_gray = stat.get_2d_slice_of_sample_from_database(num, file_id=file_id)
     #fig = preview_small_pores_detection_by_fragment(img2d_gray, plots=8)
+    pores_mask = get_small_pores_mask(img2d_gray)
 
-    fig = preview_small_pores_detection_full(img2d_gray)
+    fig, ax = plt.subplots(figsize=(7, 7), constrained_layout=True)
+    ax.imshow(pores_mask, cmap='gray', interpolation='none')
+    # fig = preview_small_pores_detection_full(img2d_gray)
     dm.save_plot(fig, "previews", f"preview_small_pores{file_id}")
