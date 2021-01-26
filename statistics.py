@@ -18,15 +18,20 @@ def get_2d_slice_of_sample_from_database(num_of_slice, file_id):
     return img2d_gray
 
 
-def get_img2d_pores(img2d_grey,
-                    percentile = 0.5,
-                    min_pore_volume = 2,
-                    max_pore_volume = 225):
-    thresh_low = np.percentile(img2d_grey.ravel(), percentile)
-    img2d_bin = img2d_grey < thresh_low
-    img2d_pores = cpe.filter_pores_mask(img2d_bin,
-                                        lowest_value = min_pore_volume,
-                                        highest_value = max_pore_volume)
+def get_img2d_pores(img2d_gray,
+                    percentile = 2.5
+                    #min_pore_volume = 2,
+                    #max_pore_volume = 225
+                   ):
+    img2d_pores = cpe.get_small_pores_mask(img2d_gray,
+                                           percentile=percentile,
+                                           min_large_contour_length=2500,
+                                           window_size=100)
+    # thresh_low = np.percentile(img2d_gray.ravel(), percentile)
+    # img2d_bin = img2d_gray < thresh_low
+    # img2d_pores = cpe.filter_pores_mask(img2d_bin,
+    #                                     lowest_value = min_pore_volume,
+    #                                     highest_value = max_pore_volume)
     return img2d_pores
 
 
@@ -110,9 +115,9 @@ if __name__=='__main__':
 
     for k, file_id in enumerate(file_ids):
         print(f"=================== {k+1} out of {len(file_ids)} =========================")
-        percentile = 0.5
-        min_pore_volume = 1
-        max_pore_volume = 225
+        percentile = 2.5
+        min_pore_volume = 13
+        max_pore_volume = 256
         pixel_size_mkm = 0.8125
         # size_type = "volume"
 
@@ -126,16 +131,22 @@ if __name__=='__main__':
             num = np.random.randint(0,2120)
             print("iter ", i+1, " out of ", size_of_sampling, " num: ", num)
 
-            img2d_grey = get_2d_slice_of_sample_from_database(num, file_id=file_id)
-            img2d_pores = get_img2d_pores(img2d_grey,
-                                          percentile = percentile,
-                                          min_pore_volume = min_pore_volume,
-                                          max_pore_volume = max_pore_volume)
+            img2d_gray = get_2d_slice_of_sample_from_database(num, file_id=file_id)
+            img2d_pores = get_img2d_pores(img2d_gray,
+                                          percentile = percentile)
             total_mean_pore_volume_in_layers.append(np.sum(img2d_pores))
+
+            min_x_value = cpe.recount_volumes_to_diameters(min_pore_volume) if size_type == "diameter" \
+                else min_pore_volume
+            max_x_value = cpe.recount_volumes_to_diameters(max_pore_volume) if size_type == "diameter" \
+                else max_pore_volume
+
             hist, bins = calc_histogram(img2d_pores,
                                         pixel_size_mkm,
                                         size_type=size_type,
-                                        num_of_bins=50)
+                                        num_of_bins=50,
+                                        min_x_value=min_x_value,
+                                        max_x_value=max_x_value)
             hists.append(hist)
 
         hist_mean = np.mean(hists, axis=0)
@@ -151,6 +162,7 @@ if __name__=='__main__':
                    color="lawngreen",
                    label=f"median={median_of_distribution:.2f} mkm")
         
+        total_mean_vol = np.mean(total_mean_pore_volume_in_layers)
         stats = dict(unit_name="mkm",
                      sample_size=size_of_sampling,
                      size_type=size_type,
@@ -158,7 +170,9 @@ if __name__=='__main__':
                          if size_type == "diameter" else min_pore_volume * pixel_size_mkm,
                      max_x_value=cpe.recount_volumes_to_diameters(max_pore_volume * pixel_size_mkm) \
                          if size_type == "diameter" else max_pore_volume * pixel_size_mkm,
-                     total_mean_pore_volume_in_layers=np.mean(total_mean_pore_volume_in_layers) * pixel_size_mkm)
+                     total_mean_pore_volume_in_layers=cpe.recount_volumes_to_diameters(total_mean_vol) * \
+                         pixel_size_mkm if size_type == "diameter" else total_mean_vol * pixel_size_mkm,
+                    )
         plot_error_hist(hist_mean, hist_std, bins, ax, stats)
         ax.legend()
         ax.grid()
