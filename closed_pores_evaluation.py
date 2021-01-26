@@ -289,29 +289,26 @@ def preview_small_pores_detection_by_fragment(img2d_gray,
 
 
 def preview_small_pores_detection_full(img2d_gray,
-                                       percentile=2,
+                                       percentile=3,
+                                       min_large_contour_length=2000,
                                        window_size=200):
     
-    fig, axes = plt.subplots(ncols=3, figsize=(21, 7), constrained_layout=True)
+    fig, axes = plt.subplots(ncols=2, figsize=(14, 7), constrained_layout=True)
     [ax.axis("off") for ax in axes]
 
-    img_without_big_contours = segment_small_pores(img2d_gray, min_large_contour_length=3000)
+    img_without_big_contours = segment_small_pores(img2d_gray,
+                                                   min_large_contour_length=min_large_contour_length)
     global_thresh = np.percentile(img_without_big_contours.ravel(), percentile)
 
     #TODO: make image sampling more flexible
     count_of_center_points = np.min(img2d_gray.shape) // window_size
 
     frame_for_new_approach_img = np.zeros([count_of_center_points*window_size]*2, dtype=int)
-    frame_for_old_approach_img = np.copy(frame_for_new_approach_img)
 
     for x in np.arange(count_of_center_points) + 0.5:
         for y in np.arange(count_of_center_points) + 0.5:
             center_coords = np.ceil(np.asarray([x, y]) * window_size).astype(int)
-            img_2d_gray_frag = crop(img2d_gray, (window_size, window_size), center_coords)
             img_without_contours_frag = crop(img_without_big_contours, (window_size, window_size), center_coords)
-
-            # old approach
-            bin_cropped_fragment_glob = img_2d_gray_frag > np.percentile(img_2d_gray_frag.ravel(), 2)
             
             # new approach
             img_without_contours_frag = median(img_without_contours_frag)
@@ -324,24 +321,17 @@ def preview_small_pores_detection_full(img2d_gray,
                 local_thresh = global_thresh
 
             bin_cropped_fragment = img_without_contours_frag > local_thresh
-
-            print(center_coords)
-            paste(frame_for_old_approach_img, bin_cropped_fragment_glob, center_coords)
             paste(frame_for_new_approach_img, bin_cropped_fragment, center_coords)
 
     
     [ax.imshow(img2d_gray, cmap=plt.cm.gray) for ax in axes]
 
-    mask_old = np.ma.masked_where(frame_for_old_approach_img, frame_for_old_approach_img)
     mask_new = np.ma.masked_where(frame_for_new_approach_img, frame_for_new_approach_img)
     
     axes[0].set_title("исходное изображение", fontsize=25)
 
-    axes[1].imshow(mask_old, cmap='hsv', interpolation='none')
-    axes[1].set_title("старый метод", fontsize=25)
-
-    axes[2].imshow(mask_new, cmap='hsv', interpolation='none')
-    axes[2].set_title("новый метод", fontsize=25)
+    axes[1].imshow(mask_new, cmap='hsv', interpolation='none')
+    axes[1].set_title("новый метод", fontsize=25)
     
     return fig
 
@@ -349,7 +339,7 @@ def preview_small_pores_detection_full(img2d_gray,
 import statistics as stat
 if __name__=='__main__':
     file_id='123497'
-    num = 500 # 320
+    num = 100 # 320
     img2d_gray = stat.get_2d_slice_of_sample_from_database(num, file_id=file_id)
     #fig = preview_small_pores_detection_by_fragment(img2d_gray, plots=8)
 
