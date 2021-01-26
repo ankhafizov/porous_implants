@@ -2,6 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import label as label_image
 from skimage.segmentation import clear_border
+from skimage import exposure
+from scipy.ndimage.morphology import binary_fill_holes
+from helper import crop
+import matplotlib.pyplot as plt
+import data_manager as dm
+from skimage.filters import median
 
 from data_manager import save_plot as save
 
@@ -53,12 +59,12 @@ def filter_pores_mask(pore_mask_img,
 
     mask=np.zeros(pore_mask_img.shape)
     for elem in accepted_labels:
-        # TODO: replace with create_mask_layer_for_label
+        # TODO: replace with _create_mask_layer_for_label
         mask += np.where(elem == labeled_img, True, False)
     return mask
 
 
-def create_mask_layer_for_label(labeled_img, label):
+def _create_mask_layer_for_label(labeled_img, label):
     mask = np.zeros(labeled_img.shape)
     mask +=  np.where(label == labeled_img, True, False)
     return mask.astype(bool)
@@ -89,13 +95,14 @@ def find_mask_longest_contours(bin_img_with_contours,
     for label in longest_contours_labels:
         if label == 0:
             continue
-        contour_mask = np.logical_or(contour_mask, create_mask_layer_for_label(labeled_img, label))
+        contour_mask = np.logical_or(contour_mask, _create_mask_layer_for_label(labeled_img, label))
     return contour_mask
 
 
 def hide_contours_in_image(img, contour_mask):
     contour_mask = contour_mask.astype(bool)
-    return contour_mask*np.mean(img) + img * (~contour_mask)
+    contour_mask = binary_fill_holes(contour_mask)
+    return contour_mask * np.mean(img) + img * (~contour_mask)
 
 
 def get_closed_pores(bin_3d_img,
@@ -217,3 +224,75 @@ def get_pore_volume_distribution(levitatting_volume, structure_neighbors_num):
     pore_volume_distribution = np.unique(connected_components, return_counts=True)[1][1:]
 
     return pore_volume_distribution
+
+
+def segment_small_pores(img2d_gray, min_large_contour_length=3000):
+    img_equalized = exposure.equalize_hist(img2d_gray)
+    img_equalized_binarized = img_equalized > 0.5
+
+    contour_mask = find_mask_longest_contours(~img_equalized_binarized,
+                                              filter_by_contour_length=True,
+                                              max_number_of_contours=None,
+                                              min_contour_length=min_large_contour_length)
+    return hide_contours_in_image(img2d_gray, contour_mask)
+
+
+def preview_small_pores_detection(img2d_gray,
+                                  plots=8,
+                                  percentile=2,
+                                  window_size=200):
+    
+    fig, axes = plt.subplots(ncols=3, nrows=plots, figsize=(21, 7*plots), constrained_layout=True)
+    axes= axes.ravel()
+
+    img_without_big_contours = segment_small_pores(img2d_gray, min_large_contour_length=3000)
+    global_thresh = np.percentile(img_without_big_contours.ravel(), percentile)
+
+    for i, _ in enumerate(axes):
+        if i % 3 == 0:
+            center_coords = np.asarray([np.random.randint(window_size//2+1, img2d_gray.shape[0]-window_size//2-1),
+                                        np.random.randint(window_size//2+1, img2d_gray.shape[0]-window_size//2-1)])              
+            img_2d_gray_frag = crop(img2d_gray, (window_size, window_size), center_coords)
+            img_without_contours_frag = crop(img_without_big_contours, (window_size, window_size), center_coords)
+            
+            # ========================================
+            axes[i].imshow(img_2d_gray_frag, cmap=plt.cm.gray)
+            axes[i].set_title("original image", fontsize=25)
+            
+            # ========================================
+            axes[i+1].imshow(img_2d_gray_frag, cmap=plt.cm.gray)
+            axes[i+1].set_title("global threcshold", fontsize=25)
+
+            bin_cropped_fragment_glob = img_2d_gray_frag > np.percentile(img_2d_gray_frag.ravel(), 2)
+            mask_cropped_fragment_glob = np.ma.masked_where(bin_cropped_fragment_glob, bin_cropped_fragment_glob)
+            axes[i+1].imshow(mask_cropped_fragment_glob, cmap='hsv', interpolation='none')
+            
+            # ========================================
+            axes[i+2].imshow(img_2d_gray_frag, cmap=plt.cm.gray)
+            img_without_contours_frag = median(img_without_contours_frag)
+
+            min_brightness = np.min(img_without_contours_frag)
+            max_brightness = np.max(img_without_contours_frag)
+            
+            local_thresh = min_brightness + (max_brightness - min_brightness) * 0.5
+            axes[i+2].set_title(f"local-global threshold \n without boarders", fontsize=25)
+            if local_thresh > global_thresh:
+                local_thresh = global_thresh
+
+            bin_cropped_fragment = img_without_contours_frag > local_thresh
+            mask_cropped_fragment = np.ma.masked_where(bin_cropped_fragment, bin_cropped_fragment)
+            axes[i+2].imshow(mask_cropped_fragment, cmap='hsv', interpolation='none')
+
+        axes[i].axis("off")
+    
+    return fig
+
+
+import statistics as stat
+if __name__=='__main__':
+    file_id='123497'
+    num = 500 # 320
+    img2d_gray = stat.get_2d_slice_of_sample_from_database(num, file_id=file_id)
+    fig = preview_small_pores_detection(img2d_gray, plots=8)
+
+    dm.save_plot(fig, "previews", f"preview_small_pores{file_id}")
