@@ -25,8 +25,7 @@ def get_img2d_pores(img2d_gray,
                    ):
     img2d_pores = cpe.get_small_pores_mask(img2d_gray,
                                            percentile=percentile,
-                                           min_large_contour_length=2500,
-                                           window_size=100)
+                                           window_size=200)
     # thresh_low = np.percentile(img2d_gray.ravel(), percentile)
     # img2d_bin = img2d_gray < thresh_low
     # img2d_pores = cpe.filter_pores_mask(img2d_bin,
@@ -115,10 +114,10 @@ if __name__=='__main__':
     max_pore_volume = 256
     pixel_size_mkm = 0.8125
     size_of_sampling = 30
-    percetiles = {'123495': 1.7,
-                  '123496': 1.75,
-                  '123497': 2,
-                  '123498': 1.9}
+    percentiles = {'123495': 1.7,
+                   '123496': 1.75,
+                   '123497': 2,
+                   '123498': 1.9}
     
     fontsize=15
     for size_type in ["volume", "diameter"]:
