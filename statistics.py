@@ -1,21 +1,9 @@
 import numpy as np
-from PIL import Image
-from file_paths import get_path
-from pathlib import Path
 import matplotlib.pyplot as plt
 
+from helper import get_2d_slice_of_sample_from_database
 import closed_pores_evaluation as cpe
 import data_manager as dm
-
-
-def get_2d_slice_of_sample_from_database(num_of_slice, file_id):
-    data_folder = get_path(file_id)
-
-    file_names = Path(data_folder).glob('*.tiff')
-    file_names = list(file_names)
-    img2d_gray = np.array(Image.open(file_names[num_of_slice]))
-
-    return img2d_gray
 
 
 def get_img2d_pores(img2d_gray,

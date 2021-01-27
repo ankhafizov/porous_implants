@@ -9,7 +9,7 @@ import data_manager as dm
 from skimage.filters import median
 
 from data_manager import save_plot as save
-from helper import crop, paste
+from helper import crop, paste, get_2d_slice_of_sample_from_database
 from icecream import ic
 
 VOXEL_SIZE = 9 * 1e-6
@@ -378,11 +378,10 @@ def get_small_pores_mask(img2d_gray,
     return ~mask_frame.astype(bool)
 
 
-import statistics as stat
 if __name__=='__main__':
     file_id='123497'
     num = np.random.randint(0,2120) #100 # 320
-    img2d_gray = stat.get_2d_slice_of_sample_from_database(num, file_id=file_id)
+    img2d_gray = get_2d_slice_of_sample_from_database(num, file_id=file_id)
     # fig = preview_small_pores_detection_by_fragment(img2d_gray, plots=8)
     # pores_mask = get_small_pores_mask(img2d_gray)
     # ic(np.sum(pores_mask)/pores_mask.size)

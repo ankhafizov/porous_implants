@@ -1,5 +1,8 @@
 import numpy as np
 import os
+from file_paths import get_path
+from PIL import Image
+from pathlib import Path
 
 def crop(img, shape, center=None):
     def left_edge(index):
@@ -40,3 +43,13 @@ def write_item_to_file(value, filename, db_folder):
     file_txt = open(file_path,"a")
     file_txt.write(f"{value} \n")
     file_txt.close()
+
+
+def get_2d_slice_of_sample_from_database(num_of_slice, file_id):
+    data_folder = get_path(file_id)
+
+    file_names = Path(data_folder).glob('*.tiff')
+    file_names = list(file_names)
+    img2d_gray = np.array(Image.open(file_names[num_of_slice]))
+
+    return img2d_gray
