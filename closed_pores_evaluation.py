@@ -347,7 +347,7 @@ def preview_small_pores_detection_full(img2d_gray,
 def get_small_pores_mask(img2d_gray,
                          percentile=2.5,
                          min_large_contour_length=2000,
-                         window_size=100):
+                         window_size=200):
 
     img_without_large_contours = remove_large_contours(img2d_gray,
                                                        min_large_contour_length=min_large_contour_length)
