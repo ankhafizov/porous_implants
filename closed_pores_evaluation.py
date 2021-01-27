@@ -91,7 +91,7 @@ def find_mask_longest_contours(bin_img_with_contours,
         longest_contours_indexes_sampled = longest_contours_indexes[longest_contours_lens_lower_max]
         longest_contours_labels = unique_labels[longest_contours_indexes_sampled]
 
-    print("number of selected contour: ", len(longest_contours_labels))
+    # print("number of selected contour: ", len(longest_contours_labels))
     contour_mask = np.zeros(labeled_img.shape, dtype=bool)
     for label in longest_contours_labels:
         if label == 0:
@@ -373,12 +373,12 @@ def get_small_pores_mask(img2d_gray,
 
 import statistics as stat
 if __name__=='__main__':
-    file_id='123497'
-    num = 100 # 320
+    file_id='123498'
+    num = np.random.randint(0,2120) #100 # 320
     img2d_gray = stat.get_2d_slice_of_sample_from_database(num, file_id=file_id)
-    #fig = preview_small_pores_detection_by_fragment(img2d_gray, plots=8)
-    pores_mask = get_small_pores_mask(img2d_gray)
-    ic(np.sum(pores_mask)/pores_mask.size)
+    # fig = preview_small_pores_detection_by_fragment(img2d_gray, plots=8)
+    # pores_mask = get_small_pores_mask(img2d_gray)
+    # ic(np.sum(pores_mask)/pores_mask.size)
 
-    #fig = preview_small_pores_detection_full(img2d_gray)
-    # dm.save_plot(fig, "previews", f"preview_small_pores{file_id}")
+    fig = preview_small_pores_detection_full(img2d_gray)
+    dm.save_plot(fig, "previews", f"preview_small_pores{file_id}")
