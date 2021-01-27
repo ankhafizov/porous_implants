@@ -241,7 +241,7 @@ def remove_large_contours(img2d_gray, min_large_contour_length=3000):
 def preview_small_pores_detection_by_fragment(img2d_gray,
                                               plots=8,
                                               percentile=2,
-                                              window_size=200):
+                                              window_size=300):
     
     fig, axes = plt.subplots(ncols=3, nrows=plots, figsize=(21, 7*plots), constrained_layout=True)
     axes= axes.ravel()
@@ -262,7 +262,7 @@ def preview_small_pores_detection_by_fragment(img2d_gray,
             
             # ========================================
             axes[i+1].imshow(img_2d_gray_frag, cmap=plt.cm.gray)
-            axes[i+1].set_title("global threcshold", fontsize=25)
+            axes[i+1].set_title("global threshold", fontsize=25)
 
             bin_cropped_fragment_glob = img_2d_gray_frag > np.percentile(img_2d_gray_frag.ravel(), 2)
             mask_cropped_fragment_glob = np.ma.masked_where(bin_cropped_fragment_glob, bin_cropped_fragment_glob)
@@ -282,7 +282,7 @@ def preview_small_pores_detection_by_fragment(img2d_gray,
 
             bin_cropped_fragment = img_without_contours_frag > local_thresh
             mask_cropped_fragment = np.ma.masked_where(bin_cropped_fragment, bin_cropped_fragment)
-            axes[i+2].imshow(mask_cropped_fragment, cmap='hsv', interpolation='none')
+            axes[i+2].imshow(mask_cropped_fragment, cmap='hsv', alpha=0.4, interpolation='none')
 
         axes[i].axis("off")
     
@@ -292,10 +292,7 @@ def preview_small_pores_detection_by_fragment(img2d_gray,
 def preview_small_pores_detection_full(img2d_gray,
                                        percentile=2.5,
                                        min_large_contour_length=2000,
-                                       window_size=100):
-    
-    fig, axes = plt.subplots(ncols=2, figsize=(14, 7), constrained_layout=True)
-    [ax.axis("off") for ax in axes]
+                                       window_size=200):
 
     img_without_large_contours = remove_large_contours(img2d_gray,
                                                    min_large_contour_length=min_large_contour_length)
@@ -325,14 +322,24 @@ def preview_small_pores_detection_full(img2d_gray,
             paste(frame_for_new_approach_img, bin_cropped_fragment, center_coords)
 
     
-    [ax.imshow(img2d_gray, cmap=plt.cm.gray) for ax in axes]
+    # fig, axes = plt.subplots(ncols=2, figsize=(14, 7), constrained_layout=True)
+    # [ax.axis("off") for ax in axes]
+    # [ax.imshow(img2d_gray, cmap=plt.cm.gray) for ax in axes]
+
+    # mask_new = np.ma.masked_where(frame_for_new_approach_img, frame_for_new_approach_img)
+    
+    # axes[0].set_title("исходное изображение", fontsize=25)
+
+    # axes[1].imshow(mask_new, cmap='hsv', interpolation='none')
+    # axes[1].set_title("новый метод", fontsize=25)
+    
+    fig, ax = plt.subplots(figsize=(20, 20), constrained_layout=True)
+    ax.axis("off")
+    ax.imshow(img2d_gray, cmap=plt.cm.gray)
 
     mask_new = np.ma.masked_where(frame_for_new_approach_img, frame_for_new_approach_img)
-    
-    axes[0].set_title("исходное изображение", fontsize=25)
-
-    axes[1].imshow(mask_new, cmap='hsv', interpolation='none')
-    axes[1].set_title("новый метод", fontsize=25)
+    ax.imshow(mask_new, cmap='hsv', alpha=0.2, interpolation='none')
+    ax.set_title("новый метод", fontsize=25)
     
     return fig
 
@@ -380,5 +387,6 @@ if __name__=='__main__':
     # pores_mask = get_small_pores_mask(img2d_gray)
     # ic(np.sum(pores_mask)/pores_mask.size)
 
-    fig = preview_small_pores_detection_full(img2d_gray)
+    # fig = preview_small_pores_detection_by_fragment(img2d_gray, percentile=2)
+    fig = preview_small_pores_detection_full(img2d_gray, percentile=1.9)
     dm.save_plot(fig, "previews", f"preview_small_pores{file_id}")
