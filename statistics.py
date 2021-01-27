@@ -113,7 +113,7 @@ if __name__=='__main__':
     min_pore_volume = 4
     max_pore_volume = 256
     pixel_size_mkm = 0.8125
-    size_of_sampling = 30
+    size_of_sampling = 100
     percentiles = {'123495': 1.7,
                    '123496': 1.75,
                    '123497': 2,
