@@ -45,7 +45,7 @@ def plot_grid(img, ax, step):
 
 
 def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape):
-    get_porosity = lambda bin_img: np.sum(bin_img) / bin_img.size
+    get_porosity = lambda bin_img: (bin_img.size - np.sum(bin_img)) / bin_img.size
 
     porosities = [get_porosity(img_fragment) for img_fragment in img_fragments]
     fig, ax = plt.subplots(figsize=(10,10))
@@ -73,7 +73,7 @@ def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape):
 if __name__=='__main__':
     file_id='123497'
     edge_size = 400
-    bin_img = ~get_bin_img(file_id+'.h5').astype(bool)
+    bin_img = get_bin_img(file_id+'.h5').astype(bool)
 
     img_fragments = divide_image_into_cubic_fragments(bin_img, edge_size=edge_size)
     print(len(img_fragments))
