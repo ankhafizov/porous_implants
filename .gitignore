@@ -5,6 +5,8 @@ __pycache__/
 #generated .stl files
 .vscode/
 
+venv/
+
 plots/
 database/
 *.vti
