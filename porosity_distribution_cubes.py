@@ -11,6 +11,7 @@ plt.style.use('seaborn-whitegrid')
 plt.rcParams.update({'font.size':22})
 
 PIXEL_SIZE_MM = 0.8125 * 10**-3
+SAVE_IMG_FOLDER = 'phantom section'
 
 def divide_image_into_cubic_fragments(img, edge_size):
     count_of_center_points = np.min(img.shape) // edge_size
@@ -33,18 +34,7 @@ def divide_image_into_cubic_fragments(img, edge_size):
     return img_fragments
 
 
-def plot_grid(img, ax, step):
-    count_of_center_points = np.min(img.shape) // edge_size
-
-    for x_edge_coord in np.arange(count_of_center_points+1)*edge_size:
-        for y_edge_coord in np.arange(count_of_center_points+1)*edge_size:
-            ax.axhline(y_edge_coord, color='red', linewidth=2)
-            ax.axvline(x_edge_coord, color='red', linewidth=2)
-
-    return ax
-
-
-def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape):
+def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape, pixel_size_mm):
     get_porosity = lambda bin_img: (bin_img.size - np.sum(bin_img)) / bin_img.size
 
     porosities = [get_porosity(img_fragment) for img_fragment in img_fragments]
@@ -56,9 +46,9 @@ def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape):
 
     textstr = (f'$\sigma={np.std(porosities):.2f}$;') + \
               (f'\n $\mu={np.mean(porosities):.2f}$;') + \
-              (f'\n Размеры образца: \n {sample_shape[0]*PIXEL_SIZE_MM:.2f}x') + \
-              (f'{sample_shape[1]*PIXEL_SIZE_MM:.2f}x{sample_shape[2]*PIXEL_SIZE_MM:.2f} мм;') + \
-              (f'\n Сторона кубика: {img_fragments[0].shape[0]*PIXEL_SIZE_MM} мм;') + \
+              (f'\n Размеры образца: \n {sample_shape[0]*pixel_size_mm:.2f}x') + \
+              (f'{sample_shape[1]*pixel_size_mm:.2f}x{sample_shape[2]*pixel_size_mm:.2f} мм;') + \
+              (f'\n Сторона кубика: {img_fragments[0].shape[0]*pixel_size_mm} мм;') + \
               (f'\n Кубиков: {len(img_fragments)} шт.')
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -67,7 +57,27 @@ def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape):
 
     ax.set_title(f"sample id {file_id}")
 
-    return fig
+    dm.save_plot(fig, SAVE_IMG_FOLDER, f'hist {file_id}')
+
+
+def plot_grid(img, ax, step):
+    count_of_center_points = np.min(img.shape) // edge_size
+
+    for x_edge_coord in np.arange(count_of_center_points+1)*edge_size:
+        for y_edge_coord in np.arange(count_of_center_points+1)*edge_size:
+            ax.axhline(y_edge_coord, color='red', linewidth=2)
+            ax.axvline(x_edge_coord, color='red', linewidth=2)
+
+    return ax
+
+
+def save_first_section_of_img(img_3d, file_id):
+    with plt.style.context('classic'):
+        fig, ax = plt.subplots(figsize=(10,10))
+        ax = plot_grid(img_3d[0], ax, edge_size)
+        ax.imshow(img_3d[0], cmap='gray')
+        ax.set_title(f'sample id {file_id}')
+    dm.save_plot(fig, SAVE_IMG_FOLDER, f'section {file_id}')
 
 
 if __name__=='__main__':
@@ -76,12 +86,7 @@ if __name__=='__main__':
     bin_img = get_bin_img(file_id+'.h5').astype(bool)
 
     img_fragments = divide_image_into_cubic_fragments(bin_img, edge_size=edge_size)
-    print(len(img_fragments))
+    save_first_section_of_img(bin_img, file_id)
 
-    with plt.style.context('classic'):
-        fig, ax = plt.subplots(figsize=(10,10))
-        ax = plot_grid(bin_img[0], ax, edge_size)
-        ax.imshow(bin_img[0], cmap='gray')
-    dm.save_plot(fig, 'phantom section', 'section')
-
-    dm.save_plot(get_porosity_histogram_disrtibution(img_fragments, file_id, bin_img.shape), 'phantom section', 'hist')
+    get_porosity_histogram_disrtibution(img_fragments, file_id, bin_img.shape, PIXEL_SIZE_MM)
+    
