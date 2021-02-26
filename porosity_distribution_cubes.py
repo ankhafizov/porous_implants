@@ -48,7 +48,7 @@ def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape, pi
               (f'\n $\mu={np.mean(porosities):.2f}$;') + \
               (f'\n Размеры образца: \n {sample_shape[0]*pixel_size_mm:.2f}x') + \
               (f'{sample_shape[1]*pixel_size_mm:.2f}x{sample_shape[2]*pixel_size_mm:.2f} мм;') + \
-              (f'\n Сторона кубика: {img_fragments[0].shape[0]*pixel_size_mm} мм;') + \
+              (f'\n Сторона кубика: {img_fragments[0].shape[0]*pixel_size_mm:.2f} мм;') + \
               (f'\n Кубиков: {len(img_fragments)} шт.')
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -83,7 +83,7 @@ def save_first_section_of_img(img_3d, file_id):
 
 if __name__=='__main__':
     file_id='123494'
-    edge_size = 500
+    edge_size = 300
     bin_img = get_bin_img(file_id+'.h5').astype(bool)
     bin_img = bin_img[:, 400:1800, :] 
 
