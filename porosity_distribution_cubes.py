@@ -69,7 +69,7 @@ def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape, pi
     dm.save_plot(fig, SAVE_IMG_SYNCHROTON_FOLDER, f'hist {file_id}')
 
 
-def plot_grid(img, ax, step):
+def plot_cubic_periodic_grid(img, ax, step):
     count_of_center_points = np.asarray(img.shape) // step
     print(count_of_center_points[0], count_of_center_points[1])
 
@@ -83,11 +83,23 @@ def plot_grid(img, ax, step):
     return ax
 
 
+def plot_edge_grid(ax, edges):
+    (x1, x2), (y1, y2) = edges
+
+    ax.axhline(y1, color='red', linewidth=4)
+    ax.axhline(y2, color='red', linewidth=4)
+
+    ax.axvline(x1, color='red', linewidth=4)
+    ax.axvline(x2, color='red', linewidth=4)
+
+    return ax
+
+
 def save_first_section_of_img(img_3d, file_id, edge_size):
     with plt.style.context('classic'):
         fig, ax = plt.subplots(figsize=(10,10))
         ax.imshow(img_3d[0], cmap='gray')
-        ax = plot_grid(img_3d[0], ax, edge_size)
+        ax = plot_cubic_periodic_grid(img_3d[0], ax, edge_size)
         ax.set_title(f'sample id {file_id}')
     dm.save_plot(fig, SAVE_IMG_SYNCHROTON_FOLDER, f'section {file_id}')
 
@@ -118,7 +130,10 @@ def calculate_synchrotron(edge_size = 400):
     get_porosity_histogram_disrtibution(img_fragments, file_id, bin_img.shape, PIXEL_SIZE_MM)
 
 
-def plot_3_sections(img3d, filename, folder=SAVE_IMG_DESKTOP_SETUP_FOLDER):
+def plot_3_sections(img3d,
+                    filename,
+                    folder=SAVE_IMG_DESKTOP_SETUP_FOLDER,
+                    grid_edges=None):
     fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(21, 21))
     axes_plot, axes_hist, axes_bin = axes
 
@@ -129,6 +144,9 @@ def plot_3_sections(img3d, filename, folder=SAVE_IMG_DESKTOP_SETUP_FOLDER):
 
     for ax_plot, ax_hist, i in zip(axes_plot, axes_hist, indexes):
         ax_plot.imshow(img3d[i], cmap="gray")
+        if grid_edges:
+            plot_edge_grid(ax_plot, grid_edges)
+
         ax_hist.hist(img3d[i].flatten(), bins=255, color="gray")
         ax_hist.axvline(thresh, color='red')
 
@@ -136,22 +154,46 @@ def plot_3_sections(img3d, filename, folder=SAVE_IMG_DESKTOP_SETUP_FOLDER):
     img3d = lv.remove_levitating_stones(img3d)
 
     for ax_bin, i in zip(axes_bin, indexes):
+        if grid_edges:
+            plot_edge_grid(ax_bin, grid_edges)
         ax_bin.imshow(img3d[i], cmap="gray", interpolation=None)
 
     dm.save_plot(fig, folder, 'section '+filename)
 
 
-if __name__=='__main__':
-    polimer_type = ["PDL-05", "PDLG-5002"]
-    paths = file_paths.get_benchtop_setup_paths(polimer_type[1])
+# [(x1, x2), (y1, y2)]
+sample_crop_edges_PDL05 = [[(100, 600), (100, 600)],
+                           [(100, 600), (100, 600)],
+                           [(100, 700), (100, 700)],
+                           [(150, 775), (150, 775)],
+                           [(100, 700), (100, 700)],
+                           [(100, 600), (100, 600)],
+                           [(100, 600), (100, 600)],
+                           [(125, 675), (125, 675)],
+                           [(150, 710), (100, 730)],
+                           [(200, 800), (100, 800)],
+                           [(120, 600), (120, 600)],
+                           [(150, 650), (150, 650)],
+                           [(200, 700), (200, 700)],
+                           [(200, 750), (100, 800)],
+                           [(150, 800), (200, 800)]]
 
-    for sample_id in range(len(paths)):
+
+if __name__=='__main__':
+    polimer_type = ["PDL-05", "PDLG-5002"][0]
+    paths = file_paths.get_benchtop_setup_paths(polimer_type)
+
+    for sample_id in range(8, len(paths)):
         print(sample_id)
         sample_name = list(paths.keys())[sample_id]
         sample = h5py.File(paths[sample_name],'r')
         
         img3d = sample['Reconstruction'][:]
-        plot_3_sections(img3d, str(sample_id) + ' ' + sample_name)
+
+        grid_edges = sample_crop_edges_PDL05 #TODO: add PDGL5002
+        plot_3_sections(img3d, 
+                        str(sample_id) + ' ' + sample_name,
+                        grid_edges=sample_crop_edges_PDL05[sample_id])
 
     sample.close()
 
