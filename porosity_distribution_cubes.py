@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import h5py
 from skimage.filters import threshold_otsu
+from scipy.ndimage import median_filter
 
 import data_manager as dm
 from helper import crop
@@ -66,11 +67,11 @@ def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape, pi
 
 
 def plot_grid(img, ax, step):
-    count_of_center_points = np.asarray(img.shape) // edge_size
+    count_of_center_points = np.asarray(img.shape) // step
     print(count_of_center_points[0], count_of_center_points[1])
 
-    for x_edge_coord in np.arange(count_of_center_points[0]+1)*edge_size:
-        for y_edge_coord in np.arange(count_of_center_points[1]+1)*edge_size:
+    for x_edge_coord in np.arange(count_of_center_points[0]+1)*step:
+        for y_edge_coord in np.arange(count_of_center_points[1]+1)*step:
             
             print(x_edge_coord, y_edge_coord)
             ax.axhline(x_edge_coord, color='red', linewidth=2)
@@ -140,6 +141,7 @@ if __name__=='__main__':
     sample = h5py.File(paths[sample_name],'r')
     
     img3d = sample['Reconstruction'][:]
+    img3d = median_filter(img3d, size=5)
 
     plot_3_sections(img3d, sample_name)
 
