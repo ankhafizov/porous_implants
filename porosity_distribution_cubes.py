@@ -11,7 +11,7 @@ plt.style.use('seaborn-whitegrid')
 plt.rcParams.update({'font.size':22})
 
 PIXEL_SIZE_MM = 0.8125 * 10**-3
-SAVE_IMG_FOLDER = 'cubics synchrotron'
+SAVE_IMG_SYNCHROTON_FOLDER = 'cubics synchrotron'
 
 def divide_image_into_cubic_fragments(img, edge_size):
     count_of_center_points = np.asarray(img.shape) // edge_size
@@ -57,7 +57,7 @@ def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape, pi
 
     ax.set_title(f"sample id {file_id}")
 
-    dm.save_plot(fig, SAVE_IMG_FOLDER, f'hist {file_id}')
+    dm.save_plot(fig, SAVE_IMG_SYNCHROTON_FOLDER, f'hist {file_id}')
 
 
 def plot_grid(img, ax, step):
@@ -66,29 +66,51 @@ def plot_grid(img, ax, step):
 
     for x_edge_coord in np.arange(count_of_center_points[0]+1)*edge_size:
         for y_edge_coord in np.arange(count_of_center_points[1]+1)*edge_size:
+            
+            print(x_edge_coord, y_edge_coord)
             ax.axhline(x_edge_coord, color='red', linewidth=2)
             ax.axvline(y_edge_coord, color='red', linewidth=2)
 
     return ax
 
 
-def save_first_section_of_img(img_3d, file_id):
+def save_first_section_of_img(img_3d, file_id, edge_size):
     with plt.style.context('classic'):
         fig, ax = plt.subplots(figsize=(10,10))
         ax.imshow(img_3d[0], cmap='gray')
         ax = plot_grid(img_3d[0], ax, edge_size)
         ax.set_title(f'sample id {file_id}')
-    dm.save_plot(fig, SAVE_IMG_FOLDER, f'section {file_id}')
+    dm.save_plot(fig, SAVE_IMG_SYNCHROTON_FOLDER, f'section {file_id}')
+
+
+def calculate_synchrotron(edge_size = 400):
+    # ============= Обработка синхротронных данных =====================
+    # для неоцентрированных образцов
+    sample_crop_edges = {'123493': (None, None),
+                         '123494': (400, 1800),
+                         '123495': (None, None),
+                         '123496': (1200, 2100),
+                         '123497': (None, None),
+                         '123498': (1000, 1900)}
+    file_id = '123498'
+    # for file_id in sample_crop_edges.keys():
+    # забираем уже отбинаризованый образец с папки database
+    bin_img = get_bin_img(file_id+'.h5').astype(bool)
+
+    # обрезаем картинку
+    left_edge, right_edge = sample_crop_edges[file_id]
+    if left_edge and right_edge:
+        bin_img = bin_img[:, left_edge:right_edge, :] 
+
+    # наризаем на кубики, показываем это на первом слое (сечении) и строим гистограмму
+    img_fragments = divide_image_into_cubic_fragments(bin_img, edge_size=edge_size)
+    save_first_section_of_img(bin_img, file_id, edge_size)
+
+    get_porosity_histogram_disrtibution(img_fragments, file_id, bin_img.shape, PIXEL_SIZE_MM)
 
 
 if __name__=='__main__':
-    file_id='123494'
-    edge_size = 300
-    bin_img = get_bin_img(file_id+'.h5').astype(bool)
-    bin_img = bin_img[:, 400:1800, :] 
+    
 
-    img_fragments = divide_image_into_cubic_fragments(bin_img, edge_size=edge_size)
-    save_first_section_of_img(bin_img, file_id)
 
-    get_porosity_histogram_disrtibution(img_fragments, file_id, bin_img.shape, PIXEL_SIZE_MM)
     
