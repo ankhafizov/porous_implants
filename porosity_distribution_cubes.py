@@ -1,17 +1,22 @@
 from porespy.generators import blobs
 import matplotlib.pyplot as plt
 import numpy as np
+import h5py
+from skimage.filters import threshold_otsu
 
 import data_manager as dm
 from helper import crop
 from helper import crop, paste, get_2d_slice_of_sample_from_database
 from phase_contrast_restoration import get_img as get_bin_img
+import file_paths
 
 plt.style.use('seaborn-whitegrid')
 plt.rcParams.update({'font.size':22})
 
 PIXEL_SIZE_MM = 0.8125 * 10**-3
 SAVE_IMG_SYNCHROTON_FOLDER = 'cubics synchrotron'
+SAVE_IMG_DESKTOP_SETUP_FOLDER = 'cubics setup'
+
 
 def divide_image_into_cubic_fragments(img, edge_size):
     count_of_center_points = np.asarray(img.shape) // edge_size
@@ -109,8 +114,37 @@ def calculate_synchrotron(edge_size = 400):
     get_porosity_histogram_disrtibution(img_fragments, file_id, bin_img.shape, PIXEL_SIZE_MM)
 
 
+def plot_3_sections(img3d, filename, folder=SAVE_IMG_DESKTOP_SETUP_FOLDER):
+    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(21, 21))
+    axes_plot, axes_hist, axes_bin = axes
+
+    indexes = [0, len(img3d)//2, -1]
+
+    for ax_plot, ax_hist, ax_bin, i in zip(axes_plot, axes_hist, axes_bin, indexes):
+        img2d = img3d[i]
+        ax_plot.imshow(img2d, cmap="gray")
+
+        thresh = threshold_otsu(img2d)
+        ax_hist.hist(img2d.flatten(), bins=255, color="gray")
+        ax_hist.axvline(thresh, color='red')
+
+        ax_bin.imshow(img2d>thresh, cmap="gray", interpolation=None)
+
+    dm.save_plot(fig, folder, 'section '+filename)
+
+
 if __name__=='__main__':
+    paths = file_paths.get_benchtop_setup_paths("PDL-05")
+    sample_id = 5
+    sample_name = list(paths.keys())[sample_id]
+    sample = h5py.File(paths[sample_name],'r')
     
+    img3d = sample['Reconstruction'][:]
+
+    plot_3_sections(img3d, sample_name)
+
+    sample.close()
+
 
 
     
