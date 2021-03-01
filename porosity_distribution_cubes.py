@@ -3,13 +3,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import h5py
 from skimage.filters import threshold_otsu
-from scipy.ndimage import median_filter
+from scipy.ndimage import median_filter, gaussian_filter
+from skimage.filters.rank import mean as mean_filter
+from skimage.morphology import ball
 
 import data_manager as dm
 from helper import crop
 from helper import crop, paste, get_2d_slice_of_sample_from_database
 from phase_contrast_restoration import get_img as get_bin_img
 import file_paths
+import leviating_volume as lv
 
 plt.style.use('seaborn-whitegrid')
 plt.rcParams.update({'font.size':22})
@@ -121,29 +124,34 @@ def plot_3_sections(img3d, filename, folder=SAVE_IMG_DESKTOP_SETUP_FOLDER):
 
     indexes = [0, len(img3d)//2, -1]
 
-    for ax_plot, ax_hist, ax_bin, i in zip(axes_plot, axes_hist, axes_bin, indexes):
-        img2d = img3d[i]
-        ax_plot.imshow(img2d, cmap="gray")
+    img3d = gaussian_filter(img3d, sigma=3)
+    thresh = threshold_otsu(img3d)
 
-        thresh = threshold_otsu(img2d)
-        ax_hist.hist(img2d.flatten(), bins=255, color="gray")
+    for ax_plot, ax_hist, i in zip(axes_plot, axes_hist, indexes):
+        ax_plot.imshow(img3d[i], cmap="gray")
+        ax_hist.hist(img3d[i].flatten(), bins=255, color="gray")
         ax_hist.axvline(thresh, color='red')
 
-        ax_bin.imshow(img2d>thresh, cmap="gray", interpolation=None)
+    img3d = img3d > thresh
+    img3d = lv.remove_levitating_stones(img3d)
+
+    for ax_bin, i in zip(axes_bin, indexes):
+        ax_bin.imshow(img3d[i], cmap="gray", interpolation=None)
 
     dm.save_plot(fig, folder, 'section '+filename)
 
 
 if __name__=='__main__':
-    paths = file_paths.get_benchtop_setup_paths("PDL-05")
-    sample_id = 5
-    sample_name = list(paths.keys())[sample_id]
-    sample = h5py.File(paths[sample_name],'r')
-    
-    img3d = sample['Reconstruction'][:]
-    img3d = median_filter(img3d, size=5)
+    polimer_type = ["PDL-05", "PDLG-5002"]
+    paths = file_paths.get_benchtop_setup_paths(polimer_type[1])
 
-    plot_3_sections(img3d, sample_name)
+    for sample_id in range(len(paths)):
+        print(sample_id)
+        sample_name = list(paths.keys())[sample_id]
+        sample = h5py.File(paths[sample_name],'r')
+        
+        img3d = sample['Reconstruction'][:]
+        plot_3_sections(img3d, str(sample_id) + ' ' + sample_name)
 
     sample.close()
 

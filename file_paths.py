@@ -35,7 +35,7 @@ def get_benchtop_setup_paths(polimer_name):
                     'PDL-05_1 date: 6_9_2020': '3ce34845-3344-412b-aff9-771a47740ee4',
                     'PDL-05_1 date: 6_16_2020': '35fade58-78d1-4171-8d24-149a6f834a82',
                     'PDL-05_1 date: 6_23_2020': 'd95ec2a8-24a5-454d-9b35-a55384510b47',
-                    'PDL-05_1 date: 6_30_020': 'ce1dcc83-b16f-434a-8855-cb298b71f767	',
+                    'PDL-05_1 date: 6_30_020': 'ce1dcc83-b16f-434a-8855-cb298b71f767',
 
                     'PDL-05_2 date: 3_18_2020': 'e585c9c2-85d2-4e28-9402-6dd15fb586a3',
                     'PDL-05_2 date: 6_9_2020': '9c324d38-0d21-4d03-9b3c-b121441216bc',
