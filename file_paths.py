@@ -72,6 +72,6 @@ def get_benchtop_setup_paths(polimer_name):
     paths = {}
     for key, folder_name in folders.items():
         sample_name = folder_name+'.h5'
-        paths.update({key: root_folder+folder_name+sample_name})
+        paths.update({key: root_folder+folder_name+'/'+sample_name})
 
     return paths
