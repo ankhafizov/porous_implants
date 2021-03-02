@@ -2,7 +2,7 @@ from porespy.generators import blobs
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py
-from skimage.filters import threshold_otsu
+from skimage.filters import threshold_otsu, threshold_multiotsu
 from scipy.ndimage import median_filter, gaussian_filter
 from skimage.filters.rank import mean as mean_filter
 from skimage.morphology import ball
@@ -161,6 +161,42 @@ def plot_3_sections(img3d,
     dm.save_plot(fig, folder, 'section '+filename)
 
 
+def plot_3_sections_multiotsu(img3d,
+                              filename,
+                              folder=SAVE_IMG_DESKTOP_SETUP_FOLDER+"multy",
+                              grid_edges=None):
+    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(21, 21))
+    axes_plot, axes_hist, axes_bin = axes
+
+    indexes = [0, len(img3d)//2, -1]
+
+    img3d = gaussian_filter(img3d, sigma=3)
+    thresholds = threshold_multiotsu(img3d)
+
+    for ax_plot, ax_hist, i in zip(axes_plot, axes_hist, indexes):
+        ax_plot.imshow(img3d[i], cmap="gray")
+        if grid_edges:
+            plot_edge_grid(ax_plot, grid_edges)
+
+        ax_hist.hist(img3d[i].flatten(), bins=255, color="gray")
+        for thresh in thresholds:
+            ax_hist.axvline(thresh, color='red')
+
+    mask = np.logical_or(img3d > thresholds[1], img3d < thresholds[0])
+    img3d = (img3d * mask) > np.mean(thresholds)
+    
+    vol = np.sum(img3d) 
+    img3d = lv.remove_levitating_stones(img3d)
+    print(np.sum(img3d)-vol)
+
+    for ax_bin, i in zip(axes_bin, indexes):
+        if grid_edges:
+            plot_edge_grid(ax_bin, grid_edges)
+        ax_bin.imshow(img3d[i], cmap="gray", interpolation=None)
+
+    dm.save_plot(fig, folder, 'section '+filename)
+
+
 # [(x1, x2), (y1, y2)]
 sample_crop_edges_PDL05 = [[(100, 600), (100, 600)],
                            [(100, 600), (100, 600)],
@@ -208,9 +244,10 @@ if __name__=='__main__':
         img3d = sample['Reconstruction'][:]
 
         grid_edges = sample_crop_edges_PDL05 if polimer_type=="PDL-05" else sample_crop_edges_PDLG5002
-        plot_3_sections(img3d, 
-                        str(sample_id) + ' ' + sample_name,
-                        grid_edges=sample_crop_edges_PDL05[sample_id])
+        plot_3_sections_multiotsu(img3d, 
+                                  str(sample_id) + ' ' + sample_name)
+                                  
+                                  #grid_edges=sample_crop_edges_PDL05[sample_id])
 
     sample.close()
 
