@@ -14,6 +14,7 @@ import data_manager as dm
 from helper import crop
 from helper import crop, paste, get_2d_slice_of_sample_from_database
 from phase_contrast_restoration import get_img as get_bin_img
+from phase_contrast_restoration import save as save_to_h5
 import file_paths
 import leviating_volume as lv
 
@@ -224,7 +225,11 @@ polimer_attenuations_PDL05 = ["low",
 
 
 if __name__=='__main__':
-    polimer_type = ["PDL-05", "PDLG-5002"][0]
+    polimer_type = ["PDL-05", "PDLG-5002"][1]
+    radius_coefs = {"PDL-05": 0.9, "PDLG-5002": 0.95}
+    polimer_attenuation = {"PDL-05": polimer_attenuations_PDL05,
+                           "PDLG-5002": polimer_attenuations_PDLG5002}
+    
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
     for sample_id in range(len(paths)):
@@ -233,12 +238,34 @@ if __name__=='__main__':
         sample = h5py.File(paths[sample_name],'r')
         
         img3d = sample['Reconstruction'][:]
+        
+        fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(21, 14))
+        for ax, i in zip(axes[0], [0, len(img3d) // 2, -1]):
+            ax.imshow(img3d[i], cmap="gray")
 
-        plot_3_sections_multiotsu(img3d,
-                                  polimer_attenuations_PDL05[sample_id],
-                                  str(sample_id) + ' ' + sample_name)
+        # preview sections
+        # plot_3_sections_multiotsu(img3d,
+        #                           polimer_attenuations_PDL05[sample_id],
+        #                           str(sample_id) + ' ' + sample_name)
                                   
-                                  #grid_edges=sample_crop_edges_PDL05[sample_id])
+        img3d = gaussian_filter(img3d, sigma=3)
+        img3d = binarize_without_eppendorf(img3d, polimer_attenuation=polimer_attenuation[polimer_type][sample_id])
+        img3d = lv.remove_levitating_stones(img3d)
+        
+        section_shape = img3d[0].shape
+        center = np.asarray(section_shape) // 2
+        rr, cc = disk(center, int(np.min(center)*radius_coefs[polimer_type]), shape=section_shape)
+        mask = np.zeros(section_shape, dtype=int)
+        mask[rr, cc] = True
+
+        for i, img2d in enumerate(img3d):
+            img3d[i] = mask * img2d
+
+        for ax, i in zip(axes[1], [0, len(img3d) // 2, -1]):
+            ax.imshow(img3d[i], cmap="gray")
+
+        dm.save_plot(fig, "setup bin section", 'section '+ str(sample_id) + ' ' + sample_name)
+        save_to_h5(img3d, sample_name)
 
     sample.close()
 
