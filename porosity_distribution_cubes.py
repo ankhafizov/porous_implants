@@ -155,8 +155,9 @@ def binarize_without_eppendorf(img3d, polimer_attenuation):
 def plot_3_sections_multiotsu(img3d,
                               polimer_attenuation,
                               filename,
-                              folder=SAVE_IMG_DESKTOP_SETUP_FOLDER+"multy",
-                              grid_edges=None):
+                              radius_coef=0.9,
+                              folder=SAVE_IMG_DESKTOP_SETUP_FOLDER+"multy"):
+
     fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(21, 21))
     axes_plot, axes_hist, axes_bin = axes
 
@@ -179,7 +180,7 @@ def plot_3_sections_multiotsu(img3d,
     
         center = np.asarray(img3d[i].shape) // 2
 
-        rr, cc = disk(center, int(np.min(center)*0.95), shape=img3d[i].shape)
+        rr, cc = disk(center, int(np.min(center)*radius_coef), shape=img3d[i].shape)
         mask = np.zeros(img3d[i].shape, dtype=int)
         mask[rr, cc] = True
         mask = np.ma.masked_where(mask>0, mask)
@@ -202,13 +203,31 @@ polimer_attenuations_PDLG5002 = ["low",
                                  "high",
                                  "high",
                                  "high",
-                                 "high",]
+                                 "high"]
+
+
+polimer_attenuations_PDL05 = ["low",
+                              "low",
+                              "low",
+                              "low",
+                              "low",
+                              "low", #manual 5
+                              "low", #manual 6
+                              "high", #manual 7
+                              "high", # 8
+                              "high", # 9
+                              "low", # 10
+                              "low", # 11
+                              "low", # 12
+                              "low", # 13
+                              "high"]
+
 
 if __name__=='__main__':
-    polimer_type = ["PDL-05", "PDLG-5002"][1]
+    polimer_type = ["PDL-05", "PDLG-5002"][0]
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-    for sample_id in range(7, 8): # len(paths)):
+    for sample_id in range(len(paths)):
         print(sample_id)
         sample_name = list(paths.keys())[sample_id]
         sample = h5py.File(paths[sample_name],'r')
@@ -216,7 +235,7 @@ if __name__=='__main__':
         img3d = sample['Reconstruction'][:]
 
         plot_3_sections_multiotsu(img3d,
-                                  polimer_attenuations_PDLG5002[sample_id],
+                                  polimer_attenuations_PDL05[sample_id],
                                   str(sample_id) + ' ' + sample_name)
                                   
                                   #grid_edges=sample_crop_edges_PDL05[sample_id])
