@@ -179,7 +179,7 @@ def plot_3_sections_multiotsu(img3d,
     
         center = np.asarray(img3d[i].shape) // 2
 
-        rr, cc = disk(center, int(np.min(center)*0.9), shape=img3d[i].shape)
+        rr, cc = disk(center, int(np.min(center)*0.95), shape=img3d[i].shape)
         mask = np.zeros(img3d[i].shape, dtype=int)
         mask[rr, cc] = True
         mask = np.ma.masked_where(mask>0, mask)
@@ -192,13 +192,13 @@ polimer_attenuations_PDLG5002 = ["low",
                                  "low",
                                  "high",
                                  "high",
-                                 "high",
-                                 "high", #manual 5
+                                 "low",
+                                 "low", #manual 5
                                  "high", #manual 6
                                  "high", #manual 7
                                  "high",
                                  "high",
-                                 "high",
+                                 "low",
                                  "high",
                                  "high",
                                  "high",
@@ -208,7 +208,7 @@ if __name__=='__main__':
     polimer_type = ["PDL-05", "PDLG-5002"][1]
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-    for sample_id in range(3):#len(paths)):
+    for sample_id in range(7, 8): # len(paths)):
         print(sample_id)
         sample_name = list(paths.keys())[sample_id]
         sample = h5py.File(paths[sample_name],'r')
