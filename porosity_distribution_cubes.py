@@ -179,18 +179,35 @@ sample_crop_edges_PDL05 = [[(100, 600), (100, 600)],
                            [(150, 800), (200, 800)]]
 
 
+sample_crop_edges_PDLG5002 = [[(100, 600), (100, 600)],
+                              [(100, 600), (100, 600)],
+                              [(100, 700), (100, 700)],
+                              [(150, 775), (150, 775)],
+                              [(100, 700), (100, 700)],
+                              [(100, 600), (100, 600)],
+                              [(100, 600), (100, 600)],
+                              [(125, 675), (125, 675)],
+                              [(150, 710), (100, 730)],
+                              [(200, 800), (100, 800)],
+                              [(120, 600), (120, 600)],
+                              [(150, 650), (150, 650)],
+                              [(200, 700), (200, 700)],
+                              [(200, 750), (100, 800)],
+                              [(150, 800), (200, 800)]]
+
+
 if __name__=='__main__':
-    polimer_type = ["PDL-05", "PDLG-5002"][0]
+    polimer_type = ["PDL-05", "PDLG-5002"][1]
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-    for sample_id in range(8, len(paths)):
+    for sample_id in range(len(paths)):
         print(sample_id)
         sample_name = list(paths.keys())[sample_id]
         sample = h5py.File(paths[sample_name],'r')
         
         img3d = sample['Reconstruction'][:]
 
-        grid_edges = sample_crop_edges_PDL05 #TODO: add PDGL5002
+        grid_edges = sample_crop_edges_PDL05 if polimer_type=="PDL-05" else sample_crop_edges_PDLG5002
         plot_3_sections(img3d, 
                         str(sample_id) + ' ' + sample_name,
                         grid_edges=sample_crop_edges_PDL05[sample_id])
