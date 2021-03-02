@@ -6,6 +6,8 @@ from skimage.filters import threshold_otsu, threshold_multiotsu
 from scipy.ndimage import median_filter, gaussian_filter
 from skimage.filters.rank import mean as mean_filter
 from skimage.morphology import ball
+from skimage.draw import disk
+
 from icecream import ic
 
 import data_manager as dm
@@ -170,7 +172,9 @@ def binarize_without_eppendorf(img3d, polimer_attenuation):
     for img2d in img3d:
         thresholds = threshold_multiotsu(img2d)
         if polimer_attenuation=="low":
-            img2d_bin = np.logical_and(img2d < thresholds[1], img2d > thresholds[0])
+            #img2d_bin = np.logical_and(img2d < thresholds[1], img2d > thresholds[0])
+            # лучше вместе с эппендорфом
+            img2d_bin = img2d > thresholds[0]
         elif polimer_attenuation=="high":
             img2d_bin = img2d > thresholds[1]
         
@@ -197,7 +201,6 @@ def plot_3_sections_multiotsu(img3d,
 
         ax_hist.hist(img3d[i].flatten(), bins=255, color="gray")
         thresholds = threshold_multiotsu(img3d[i])
-        ic(thresholds)
         for thresh in thresholds:
             ax_hist.axvline(thresh, color='red')
 
@@ -205,9 +208,18 @@ def plot_3_sections_multiotsu(img3d,
     img3d = lv.remove_levitating_stones(img3d)
 
     for ax_bin, i in zip(axes_bin, section_indexes):
+        ax_bin.imshow(img3d[i], cmap="gray", interpolation=None)
+    
+        center = np.asarray(img3d[i].shape) // 2
+
+        rr, cc = disk(center, int(np.min(center)*0.9), shape=img3d[i].shape)
+        mask = np.zeros(img3d[i].shape, dtype=int)
+        mask[rr, cc] = True
+        mask = np.ma.masked_where(mask>0, mask)
+        ax_bin.imshow(mask, cmap="hsv", alpha=0.3)
+
         if grid_edges:
             plot_edge_grid(ax_bin, grid_edges)
-        ax_bin.imshow(img3d[i], cmap="gray", interpolation=None)
 
     dm.save_plot(fig, folder, 'section '+filename)
 
@@ -267,7 +279,7 @@ if __name__=='__main__':
     polimer_type = ["PDL-05", "PDLG-5002"][1]
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-    for sample_id in range(5, 8):#len(paths)):
+    for sample_id in range(3):#len(paths)):
         print(sample_id)
         sample_name = list(paths.keys())[sample_id]
         sample = h5py.File(paths[sample_name],'r')
@@ -276,7 +288,7 @@ if __name__=='__main__':
 
         grid_edges = sample_crop_edges_PDL05 if polimer_type=="PDL-05" else sample_crop_edges_PDLG5002
         plot_3_sections_multiotsu(img3d,
-                                  polimer_attenuations_PDLG5002[sample_id]
+                                  polimer_attenuations_PDLG5002[sample_id],
                                   str(sample_id) + ' ' + sample_name)
                                   
                                   #grid_edges=sample_crop_edges_PDL05[sample_id])
