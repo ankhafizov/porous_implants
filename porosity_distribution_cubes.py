@@ -6,6 +6,7 @@ from skimage.filters import threshold_otsu, threshold_multiotsu
 from scipy.ndimage import median_filter, gaussian_filter
 from skimage.filters.rank import mean as mean_filter
 from skimage.morphology import ball
+from icecream import ic
 
 import data_manager as dm
 from helper import crop
@@ -137,12 +138,12 @@ def plot_3_sections(img3d,
     fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(21, 21))
     axes_plot, axes_hist, axes_bin = axes
 
-    indexes = [0, len(img3d)//2, -1]
+    section_indexes = [0, len(img3d)//2, -1]
 
     img3d = gaussian_filter(img3d, sigma=3)
     thresh = threshold_otsu(img3d)
 
-    for ax_plot, ax_hist, i in zip(axes_plot, axes_hist, indexes):
+    for ax_plot, ax_hist, i in zip(axes_plot, axes_hist, section_indexes):
         ax_plot.imshow(img3d[i], cmap="gray")
         if grid_edges:
             plot_edge_grid(ax_plot, grid_edges)
@@ -153,7 +154,7 @@ def plot_3_sections(img3d,
     img3d = img3d > thresh
     img3d = lv.remove_levitating_stones(img3d)
 
-    for ax_bin, i in zip(axes_bin, indexes):
+    for ax_bin, i in zip(axes_bin, section_indexes):
         if grid_edges:
             plot_edge_grid(ax_bin, grid_edges)
         ax_bin.imshow(img3d[i], cmap="gray", interpolation=None)
@@ -161,35 +162,49 @@ def plot_3_sections(img3d,
     dm.save_plot(fig, folder, 'section '+filename)
 
 
+def binarize_without_eppendorf(img3d, polimer_attenuation):
+    """
+    polimer_attenuation = "low", "high"
+    """
+    img3d_bin = []
+    for img2d in img3d:
+        thresholds = threshold_multiotsu(img2d)
+        if polimer_attenuation=="low":
+            img2d_bin = np.logical_and(img2d < thresholds[1], img2d > thresholds[0])
+        elif polimer_attenuation=="high":
+            img2d_bin = img2d > thresholds[1]
+        
+        img3d_bin.append(img2d_bin)
+        
+    return np.asarray(img3d_bin)
+
+
 def plot_3_sections_multiotsu(img3d,
+                              polimer_attenuation,
                               filename,
                               folder=SAVE_IMG_DESKTOP_SETUP_FOLDER+"multy",
                               grid_edges=None):
     fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(21, 21))
     axes_plot, axes_hist, axes_bin = axes
 
-    indexes = [0, len(img3d)//2, -1]
-
+    section_indexes = [0, len(img3d)//2, -1]
     img3d = gaussian_filter(img3d, sigma=3)
-    thresholds = threshold_multiotsu(img3d)
 
-    for ax_plot, ax_hist, i in zip(axes_plot, axes_hist, indexes):
+    for ax_plot, ax_hist, i in zip(axes_plot, axes_hist, section_indexes):
         ax_plot.imshow(img3d[i], cmap="gray")
         if grid_edges:
             plot_edge_grid(ax_plot, grid_edges)
 
         ax_hist.hist(img3d[i].flatten(), bins=255, color="gray")
+        thresholds = threshold_multiotsu(img3d[i])
+        ic(thresholds)
         for thresh in thresholds:
             ax_hist.axvline(thresh, color='red')
 
-    mask = np.logical_or(img3d > thresholds[1], img3d < thresholds[0])
-    img3d = (img3d * mask) > np.mean(thresholds)
-    
-    vol = np.sum(img3d) 
+    img3d = binarize_without_eppendorf(img3d, polimer_attenuation=polimer_attenuation)
     img3d = lv.remove_levitating_stones(img3d)
-    print(np.sum(img3d)-vol)
 
-    for ax_bin, i in zip(axes_bin, indexes):
+    for ax_bin, i in zip(axes_bin, section_indexes):
         if grid_edges:
             plot_edge_grid(ax_bin, grid_edges)
         ax_bin.imshow(img3d[i], cmap="gray", interpolation=None)
@@ -232,11 +247,27 @@ sample_crop_edges_PDLG5002 = [[(100, 600), (100, 600)],
                               [(150, 800), (200, 800)]]
 
 
+polimer_attenuations_PDLG5002 = ["low",
+                                 "low",
+                                 "high",
+                                 "high",
+                                 "high",
+                                 "high", #manual 5
+                                 "high", #manual 6
+                                 "high", #manual 7
+                                 "high",
+                                 "high",
+                                 "high",
+                                 "high",
+                                 "high",
+                                 "high",
+                                 "high",]
+
 if __name__=='__main__':
     polimer_type = ["PDL-05", "PDLG-5002"][1]
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-    for sample_id in range(len(paths)):
+    for sample_id in range(5, 8):#len(paths)):
         print(sample_id)
         sample_name = list(paths.keys())[sample_id]
         sample = h5py.File(paths[sample_name],'r')
@@ -244,7 +275,8 @@ if __name__=='__main__':
         img3d = sample['Reconstruction'][:]
 
         grid_edges = sample_crop_edges_PDL05 if polimer_type=="PDL-05" else sample_crop_edges_PDLG5002
-        plot_3_sections_multiotsu(img3d, 
+        plot_3_sections_multiotsu(img3d,
+                                  polimer_attenuations_PDLG5002[sample_id]
                                   str(sample_id) + ' ' + sample_name)
                                   
                                   #grid_edges=sample_crop_edges_PDL05[sample_id])
