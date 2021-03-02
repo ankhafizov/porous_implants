@@ -133,37 +133,6 @@ def calculate_synchrotron(edge_size = 400):
     get_porosity_histogram_disrtibution(img_fragments, file_id, bin_img.shape, PIXEL_SIZE_MM)
 
 
-def plot_3_sections(img3d,
-                    filename,
-                    folder=SAVE_IMG_DESKTOP_SETUP_FOLDER,
-                    grid_edges=None):
-    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(21, 21))
-    axes_plot, axes_hist, axes_bin = axes
-
-    section_indexes = [0, len(img3d)//2, -1]
-
-    img3d = gaussian_filter(img3d, sigma=3)
-    thresh = threshold_otsu(img3d)
-
-    for ax_plot, ax_hist, i in zip(axes_plot, axes_hist, section_indexes):
-        ax_plot.imshow(img3d[i], cmap="gray")
-        if grid_edges:
-            plot_edge_grid(ax_plot, grid_edges)
-
-        ax_hist.hist(img3d[i].flatten(), bins=255, color="gray")
-        ax_hist.axvline(thresh, color='red')
-
-    img3d = img3d > thresh
-    img3d = lv.remove_levitating_stones(img3d)
-
-    for ax_bin, i in zip(axes_bin, section_indexes):
-        if grid_edges:
-            plot_edge_grid(ax_bin, grid_edges)
-        ax_bin.imshow(img3d[i], cmap="gray", interpolation=None)
-
-    dm.save_plot(fig, folder, 'section '+filename)
-
-
 def binarize_without_eppendorf(img3d, polimer_attenuation):
     """
     polimer_attenuation = "low", "high"
@@ -196,8 +165,6 @@ def plot_3_sections_multiotsu(img3d,
 
     for ax_plot, ax_hist, i in zip(axes_plot, axes_hist, section_indexes):
         ax_plot.imshow(img3d[i], cmap="gray")
-        if grid_edges:
-            plot_edge_grid(ax_plot, grid_edges)
 
         ax_hist.hist(img3d[i].flatten(), bins=255, color="gray")
         thresholds = threshold_multiotsu(img3d[i])
@@ -218,45 +185,7 @@ def plot_3_sections_multiotsu(img3d,
         mask = np.ma.masked_where(mask>0, mask)
         ax_bin.imshow(mask, cmap="hsv", alpha=0.3)
 
-        if grid_edges:
-            plot_edge_grid(ax_bin, grid_edges)
-
     dm.save_plot(fig, folder, 'section '+filename)
-
-
-# [(x1, x2), (y1, y2)]
-sample_crop_edges_PDL05 = [[(100, 600), (100, 600)],
-                           [(100, 600), (100, 600)],
-                           [(100, 700), (100, 700)],
-                           [(150, 775), (150, 775)],
-                           [(100, 700), (100, 700)],
-                           [(100, 600), (100, 600)],
-                           [(100, 600), (100, 600)],
-                           [(125, 675), (125, 675)],
-                           [(150, 710), (100, 730)],
-                           [(200, 800), (100, 800)],
-                           [(120, 600), (120, 600)],
-                           [(150, 650), (150, 650)],
-                           [(200, 700), (200, 700)],
-                           [(200, 750), (100, 800)],
-                           [(150, 800), (200, 800)]]
-
-
-sample_crop_edges_PDLG5002 = [[(100, 600), (100, 600)],
-                              [(100, 600), (100, 600)],
-                              [(100, 700), (100, 700)],
-                              [(150, 775), (150, 775)],
-                              [(100, 700), (100, 700)],
-                              [(100, 600), (100, 600)],
-                              [(100, 600), (100, 600)],
-                              [(125, 675), (125, 675)],
-                              [(150, 710), (100, 730)],
-                              [(200, 800), (100, 800)],
-                              [(120, 600), (120, 600)],
-                              [(150, 650), (150, 650)],
-                              [(200, 700), (200, 700)],
-                              [(200, 750), (100, 800)],
-                              [(150, 800), (200, 800)]]
 
 
 polimer_attenuations_PDLG5002 = ["low",
@@ -286,7 +215,6 @@ if __name__=='__main__':
         
         img3d = sample['Reconstruction'][:]
 
-        grid_edges = sample_crop_edges_PDL05 if polimer_type=="PDL-05" else sample_crop_edges_PDLG5002
         plot_3_sections_multiotsu(img3d,
                                   polimer_attenuations_PDLG5002[sample_id],
                                   str(sample_id) + ' ' + sample_name)
