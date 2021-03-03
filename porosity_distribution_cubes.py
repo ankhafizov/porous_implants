@@ -130,7 +130,7 @@ def get_sector_circle_mask(img_shape, center, radius_coef, sector_num):
     """
     sector_num = 0, 1, 2, or 3 (int)
     """
-    rr, cc = disk(center, int(np.min(center)*radius_coef), shape=img3d[i].shape)
+    rr, cc = disk(center, int(np.min(center)*radius_coef), shape=img_shape)
     mask_circle = np.zeros(img_shape, dtype=int)
     mask_circle[rr, cc] = True
 
@@ -144,6 +144,39 @@ def get_sector_circle_mask(img_shape, center, radius_coef, sector_num):
     return mask
 
 
+def plot_sector_circle_mask(img3d, radius_coef):
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(21, 7))
+    for ax, i in zip(axes, [0, len(img3d) // 2, -1]):
+        ax.imshow(img3d[i], cmap="gray")
+
+        center = np.asarray(img3d[i].shape) // 2
+        
+        mask = np.zeros(img3d[i].shape)
+        for sector_num in range(4):
+            color_factor = sector_num + 2 ** sector_num
+            mask += get_sector_circle_mask(img3d[i].shape, center, radius_coef, sector_num) * color_factor
+
+        mask = np.ma.masked_where(mask<1, mask)
+        ax.imshow(mask, cmap="tab10", alpha=0.8)
+    
+    return fig
+
+
+def divide_image_into_sector_cylindric_fragments(img3d, hight):
+    center = np.asarray(img3d.shape)[1, 2] // 2
+    img_fragments = []
+
+    if img.ndim == 3:
+        for x_coord in np.arange(count_of_center_points[0]+1) + 0.5:
+            for y_coord in np.arange(count_of_center_points[1]+1) + 0.5:
+                for z_coord in np.arange(count_of_center_points[2]+1) + 0.5:
+                    center_coords = np.ceil(np.asarray([x_coord, y_coord, z_coord]) * edge_size).astype(int)
+                    img_fragment = crop(img, (edge_size, edge_size, edge_size), center_coords)
+                    img_fragments.append(img_fragment)
+
+    return img_fragments
+
+
 
 if __name__=='__main__':
     sample_id = 3
@@ -154,20 +187,8 @@ if __name__=='__main__':
 
     sample_name = list(paths.keys())[sample_id]
     img3d = get_bin_img(sample_name)
+    fig = plot_sector_circle_mask(img3d, radius_coefs[polimer_type])
 
-    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(21, 7))
-    for ax, i in zip(axes, [0, len(img3d) // 2, -1]):
-        ax.imshow(img3d[i], cmap="gray")
-
-        print(img3d[i].shape)
-        center = np.asarray(img3d[i].shape) // 2
-        
-        sector_num = 1
-        mask = get_sector_circle_mask(img3d[i].shape, center, radius_coefs[polimer_type], sector_num)
-        
-        mask = np.ma.masked_where(mask<1, mask)
-        ax.imshow(mask, cmap="hsv", alpha=0.5)
-    
     dm.save_plot(fig, "setup bin section", 'bin ' + str(sample_id) + ' ' + sample_name)
 
 
