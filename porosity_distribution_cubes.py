@@ -2,6 +2,7 @@ from porespy.generators import blobs
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage.draw import disk, rectangle
+from icecream import ic
 
 import data_manager as dm
 from helper import crop, get_2d_slice_of_sample_from_database
@@ -162,20 +163,30 @@ def plot_sector_circle_mask(img3d, radius_coef):
     return fig
 
 
-def divide_image_into_sector_cylindric_fragments(img3d, hight, radius_coef):
-    center = np.asarray(img3d.shape)[1, 2] // 2
-    img_fragments = []
+def divide_image_into_sector_cylindric_fragments(img3d, height, radius_coef):
+    center = np.asarray(img3d.shape)[1:] // 2
+    print(img3d.shape, center)
 
-    mask = np.zeros(img3d[i].shape) 
+    cylindric_fragments = []
+    masks = []
     for sector_num in range(4):
+        mask = np.zeros(img3d.shape) 
         for i in range(len(img3d)):
-            mask += get_sector_circle_mask(img3d[i].shape, center, radius_coef, sector_num)
+            mask[i] = get_sector_circle_mask(img3d[i].shape, center, radius_coef, sector_num)
+        cylindric_fragments.append(np.logical_and(img3d, mask))
+        masks.append(mask)
+    
+    img_fragments, mask_fragments = [], []
+    remove_tail = lambda arr: arr[:len(arr)//height*height]
+    crop_to_fragments = lambda arr: [arr[i: i+height] for i in range(0, len(arr), height)]
 
-    center_coords = np.ceil(np.asarray([x_coord, y_coord, z_coord]) * edge_size).astype(int)
-    img_fragment = crop(img, (edge_size, edge_size, edge_size), center_coords)
-    img_fragments.append(img_fragment)
+    for cylindric_fragment, mask in zip(cylindric_fragments, masks):
+        cylindric_fragment, mask = remove_tail(cylindric_fragment), remove_tail(mask)
+        for img, msk in zip(crop_to_fragments(cylindric_fragment), crop_to_fragments(mask)):
+            img_fragments.append(img)
+            mask_fragments.append(msk)
 
-    return img_fragments
+    return np.asarray(img_fragments), np.asarray(mask_fragments)
 
 
 
@@ -186,12 +197,26 @@ if __name__=='__main__':
 
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-    for sample_id in range(len(paths)):
-        sample_name = list(paths.keys())[sample_id]
-        img3d = get_bin_img(sample_name)
-        fig = plot_sector_circle_mask(img3d, radius_coefs[polimer_type])
+    sample_id = 0
+    sample_name = list(paths.keys())[sample_id]
+    img3d = get_bin_img(sample_name)
+    ic(img3d.shape)
 
-        dm.save_plot(fig, "setup bin section", 'bin ' + str(sample_id) + ' ' + sample_name)
+    cylindric_fragments = divide_image_into_sector_cylindric_fragments(img3d,
+                                                                       height=250,
+                                                                       radius_coef=radius_coefs[polimer_type])
+
+    ic(len(cylindric_fragments))
+    ic(cylindric_fragments[0].shape, cylindric_fragments[1].shape)
+
+    # for sample_id in range(len(paths)):
+    #     sample_name = list(paths.keys())[sample_id]
+    #     img3d = get_bin_img(sample_name)
+    #     fig = plot_sector_circle_mask(img3d, radius_coefs[polimer_type])
+
+    #     dm.save_plot(fig, "setup bin section", 'bin ' + str(sample_id) + ' ' + sample_name)
+
+
 
 
 
