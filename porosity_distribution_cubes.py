@@ -40,10 +40,21 @@ def divide_image_into_cubic_fragments(img, edge_size):
     return img_fragments
 
 
-def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape, pixel_size_mm):
-    get_porosity = lambda bin_img: (bin_img.size - np.sum(bin_img)) / bin_img.size
+def get_porosity_histogram_disrtibution(img_fragments, 
+                                        file_name,
+                                        sample_shape,
+                                        pixel_size_mm,
+                                        masks=0,
+                                        save_folder=SAVE_IMG_SYNCHROTON_FOLDER):
+    fragmen_type = "кубик"
+    if not type(masks) == int:
+        fragmen_type = "сектор"
+        masks = [np.ones(img_fragment.shape, dtype=bool) for img_fragment in img_fragments]
 
-    porosities = [get_porosity(img_fragment) for img_fragment in img_fragments]
+    get_porosity = lambda bin_img, mask: (np.sum(mask) - np.sum(bin_img)) / np.sum(mask)
+
+    porosities = [get_porosity(img_fragment, mask) for mask, img_fragment in zip(masks, img_fragments)]
+    ic(porosities)
     fig, ax = plt.subplots(figsize=(10,10))
     ax.hist(porosities, bins=25, edgecolor='k')
     ax.set_xlabel("porosity")
@@ -54,16 +65,16 @@ def get_porosity_histogram_disrtibution(img_fragments, file_id, sample_shape, pi
               (f'\n $\mu={np.mean(porosities):.2f}$;') + \
               (f'\n Размеры образца: \n {sample_shape[0]*pixel_size_mm:.2f}x') + \
               (f'{sample_shape[1]*pixel_size_mm:.2f}x{sample_shape[2]*pixel_size_mm:.2f} мм;') + \
-              (f'\n Сторона кубика: {img_fragments[0].shape[0]*pixel_size_mm:.2f} мм;') + \
-              (f'\n Кубиков: {len(img_fragments)} шт.')
+              (f'\n Сторона {fragmen_type}а: {len(img_fragments[0])*pixel_size_mm:.2f} мм;') + \
+              (f'\n {fragmen_type.capitalize()}ов: {len(img_fragments)} шт.')
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
     ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=20,
             verticalalignment='top', bbox=props)
 
-    ax.set_title(f"sample id {file_id}")
+    ax.set_title(f"sample {file_name}")
 
-    dm.save_plot(fig, SAVE_IMG_SYNCHROTON_FOLDER, f'hist {file_id}')
+    dm.save_plot(fig, save_folder, f'hist {file_name}')
 
 
 def plot_cubic_periodic_grid(img, ax, step):
@@ -170,9 +181,9 @@ def divide_image_into_sector_cylindric_fragments(img3d, height, radius_coef):
     cylindric_fragments = []
     masks = []
     for sector_num in range(4):
-        mask = np.zeros(img3d.shape) 
+        mask = np.zeros(img3d.shape, dtype=bool) 
         for i in range(len(img3d)):
-            mask[i] = get_sector_circle_mask(img3d[i].shape, center, radius_coef, sector_num)
+            mask[i] = get_sector_circle_mask(img3d[i].shape, center, radius_coef, sector_num).astype(bool)
         cylindric_fragments.append(np.logical_and(img3d, mask))
         masks.append(mask)
     
@@ -189,7 +200,6 @@ def divide_image_into_sector_cylindric_fragments(img3d, height, radius_coef):
     return np.asarray(img_fragments), np.asarray(mask_fragments)
 
 
-
 if __name__=='__main__':
     
     polimer_type = ["PDL-05", "PDLG-5002"][1]
@@ -197,18 +207,29 @@ if __name__=='__main__':
 
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-    sample_id = 0
+    sample_id = 8
     sample_name = list(paths.keys())[sample_id]
     img3d = get_bin_img(sample_name)
-    ic(img3d.shape)
 
-    cylindric_fragments = divide_image_into_sector_cylindric_fragments(img3d,
-                                                                       height=250,
-                                                                       radius_coef=radius_coefs[polimer_type])
+    cylindric_fragments, cylindric_masks \
+         = divide_image_into_sector_cylindric_fragments(img3d,
+                                                        height=250,
+                                                        radius_coef=radius_coefs[polimer_type])
+    
+    fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(21, 7))
+    axes = np.transpose(axes)
+    for ax, i in zip(axes, [0, len(cylindric_fragments[0]) // 2, -1]):
+        ax[0].imshow(cylindric_fragments[0][i], cmap="gray")
+        ax[1].imshow(cylindric_masks[0][i], cmap="gray")
 
-    ic(len(cylindric_fragments))
-    ic(cylindric_fragments[0].shape, cylindric_fragments[1].shape)
+    dm.save_plot(fig, "setup bin section", 'bin ' + sample_name)
 
+    get_porosity_histogram_disrtibution(cylindric_fragments, 
+                                        sample_name,
+                                        img3d.shape,
+                                        pixel_size_mm=PIXEL_SIZE_MM,
+                                        masks=cylindric_masks,
+                                        save_folder=SAVE_IMG_DESKTOP_SETUP_FOLDER)
     # for sample_id in range(len(paths)):
     #     sample_name = list(paths.keys())[sample_id]
     #     img3d = get_bin_img(sample_name)
