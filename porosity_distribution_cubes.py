@@ -1,6 +1,7 @@
 from porespy.generators import blobs
 import matplotlib.pyplot as plt
 import numpy as np
+from skimage.draw import disk, rectangle
 
 import data_manager as dm
 from helper import crop, get_2d_slice_of_sample_from_database
@@ -125,8 +126,50 @@ def main_synchrotron(edge_size = 400):
     get_porosity_histogram_disrtibution(img_fragments, file_id, bin_img.shape, PIXEL_SIZE_MM)
 
 
+def get_sector_circle_mask(img_shape, center, radius_coef, sector_num):
+    """
+    sector_num = 0, 1, 2, or 3 (int)
+    """
+    rr, cc = disk(center, int(np.min(center)*radius_coef), shape=img3d[i].shape)
+    mask_circle = np.zeros(img_shape, dtype=int)
+    mask_circle[rr, cc] = True
+
+    mask_sector = np.zeros(img_shape, dtype=int)
+    start_coords = [[0, 0], [0, center[1]], [center[0], 0], center]
+    rr, cc = rectangle(start=start_coords[sector_num], extent=center, shape=img_shape)
+    mask_sector[rr, cc] = True
+
+    mask = np.logical_and(mask_sector, mask_circle)
+
+    return mask
+
+
+
 if __name__=='__main__':
-    pass
+    sample_id = 3
+    polimer_type = ["PDL-05", "PDLG-5002"][0]
+    radius_coefs = {"PDL-05": 0.9, "PDLG-5002": 0.95}
+
+    paths = file_paths.get_benchtop_setup_paths(polimer_type)
+
+    sample_name = list(paths.keys())[sample_id]
+    img3d = get_bin_img(sample_name)
+
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(21, 7))
+    for ax, i in zip(axes, [0, len(img3d) // 2, -1]):
+        ax.imshow(img3d[i], cmap="gray")
+
+        print(img3d[i].shape)
+        center = np.asarray(img3d[i].shape) // 2
+        
+        sector_num = 1
+        mask = get_sector_circle_mask(img3d[i].shape, center, radius_coefs[polimer_type], sector_num)
+        
+        mask = np.ma.masked_where(mask<1, mask)
+        ax.imshow(mask, cmap="hsv", alpha=0.5)
+    
+    dm.save_plot(fig, "setup bin section", 'bin ' + str(sample_id) + ' ' + sample_name)
+
 
 
 
