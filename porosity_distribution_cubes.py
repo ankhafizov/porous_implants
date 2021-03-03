@@ -151,7 +151,7 @@ def plot_sector_circle_mask(img3d, radius_coef):
 
         center = np.asarray(img3d[i].shape) // 2
         
-        mask = np.zeros(img3d[i].shape)
+        mask = np.zeros(img3d[i].shape) 
         for sector_num in range(4):
             color_factor = sector_num + 2 ** sector_num
             mask += get_sector_circle_mask(img3d[i].shape, center, radius_coef, sector_num) * color_factor
@@ -162,34 +162,36 @@ def plot_sector_circle_mask(img3d, radius_coef):
     return fig
 
 
-def divide_image_into_sector_cylindric_fragments(img3d, hight):
+def divide_image_into_sector_cylindric_fragments(img3d, hight, radius_coef):
     center = np.asarray(img3d.shape)[1, 2] // 2
     img_fragments = []
 
-    if img.ndim == 3:
-        for x_coord in np.arange(count_of_center_points[0]+1) + 0.5:
-            for y_coord in np.arange(count_of_center_points[1]+1) + 0.5:
-                for z_coord in np.arange(count_of_center_points[2]+1) + 0.5:
-                    center_coords = np.ceil(np.asarray([x_coord, y_coord, z_coord]) * edge_size).astype(int)
-                    img_fragment = crop(img, (edge_size, edge_size, edge_size), center_coords)
-                    img_fragments.append(img_fragment)
+    mask = np.zeros(img3d[i].shape) 
+    for sector_num in range(4):
+        for i in range(len(img3d)):
+            mask += get_sector_circle_mask(img3d[i].shape, center, radius_coef, sector_num)
+
+    center_coords = np.ceil(np.asarray([x_coord, y_coord, z_coord]) * edge_size).astype(int)
+    img_fragment = crop(img, (edge_size, edge_size, edge_size), center_coords)
+    img_fragments.append(img_fragment)
 
     return img_fragments
 
 
 
 if __name__=='__main__':
-    sample_id = 3
-    polimer_type = ["PDL-05", "PDLG-5002"][0]
+    
+    polimer_type = ["PDL-05", "PDLG-5002"][1]
     radius_coefs = {"PDL-05": 0.9, "PDLG-5002": 0.95}
 
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-    sample_name = list(paths.keys())[sample_id]
-    img3d = get_bin_img(sample_name)
-    fig = plot_sector_circle_mask(img3d, radius_coefs[polimer_type])
+    for sample_id in range(len(paths)):
+        sample_name = list(paths.keys())[sample_id]
+        img3d = get_bin_img(sample_name)
+        fig = plot_sector_circle_mask(img3d, radius_coefs[polimer_type])
 
-    dm.save_plot(fig, "setup bin section", 'bin ' + str(sample_id) + ' ' + sample_name)
+        dm.save_plot(fig, "setup bin section", 'bin ' + str(sample_id) + ' ' + sample_name)
 
 
 
