@@ -154,6 +154,6 @@ if __name__=='__main__':
             ax.imshow(img3d[i], cmap="gray")
 
         dm.save_plot(fig, "setup bin section", 'section '+ str(sample_id) + ' ' + sample_name)
-        save_to_h5(~img3d.astype(bool), sample_name)
+        save_to_h5(img3d.astype(bool), sample_name)
 
     sample.close()
