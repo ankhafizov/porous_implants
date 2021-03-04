@@ -258,26 +258,30 @@ def get_all_params_info(
     return df
 
 
-# keys = save_params(phantom_ind = 0,
-#                 filter_name = 'rrr',
-#                 num_of_initial_phantom_stones= 0,
-#                 num_of_initial_phantom_pores= 0,
-#                 num_of_initial_rve_stones= 0,
-#                 num_of_initial_rve_pores= 0,
-#                 optimal_params= 0,
-#                 num_of_final_stones_optim= 0,
-#                 num_of_final_pores_optim= 0,
-#                 efficiency_optim= 0,
-#                 random_params= 0,
-#                 num_of_final_stones_random= 0,
-#                 num_of_final_pores_random= 0,
-#                 efficiency_random= 0,
-                
-#                 jaccard_score_optim= 0,
-#                 jaccard_score_rand= 0,
-#                 jaccard_bin= 0
+SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+DATA_FOLDER_NAME = 'dataframes'
+DEFAULT_SEP = ";"
+DEFAULT_DECIMAL = ","
 
-#                 )
+def save_dataframe(df, file_name):
+    """ сохраняет csv файл
+    df : pandas.Dataframe
+        таблица данных
+    file_name : str
+        Название csv или xlsx файла в который нужно сохранить df
+    
+    Returns
+    -------
+    """
 
-# print(get_all_params_info(keys))
-# get_all_params_info()
+    file_path = os.path.join(SCRIPT_PATH, DATA_FOLDER_NAME, file_name)
+
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    if file_name[-3:]=="csv":
+        df.to_csv(file_path, sep=DEFAULT_SEP, decimal=DEFAULT_DECIMAL)
+    elif file_name[-3:]=="lsx":
+        df.to_excel(file_path)
+    else:
+        raise ValueError(f"file_name must consist .csv or .xlsx")
