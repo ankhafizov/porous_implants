@@ -14,7 +14,9 @@ import file_paths
 plt.style.use('seaborn-whitegrid')
 plt.rcParams.update({'font.size':22})
 
-PIXEL_SIZE_MM = 0.8125 * 10**-3
+PIXEL_SIZE_MM_SYNCHROTRON = 0.8125 * 10**-3
+PIXEL_SIZE_MM_SETUP = 9 * 10**-3
+
 SAVE_IMG_SYNCHROTON_FOLDER = 'cubics synchrotron'
 SAVE_IMG_DESKTOP_SETUP_FOLDER = 'setup bin section'
 
@@ -46,15 +48,21 @@ def get_porosity_histogram_disrtibution(img_fragments,
                                         pixel_size_mm,
                                         masks=0,
                                         bins_num = 25,
+                                        radius_coef = np.nan,
                                         save_folder=SAVE_IMG_SYNCHROTON_FOLDER):
 
     if not type(masks) == int:
         fragmen_type = "сектор"
         length_type = "Выстота"
+        # возьмем случайную маску и извлекем параметры, справедливые для всех остальных
+        radius = int(np.min(np.asarray(masks[0].shape)[1:] // 2)*radius_coef)*pixel_size_mm
+        sample_size = f'R={radius:.2f} мм; h={sample_shape[0]*pixel_size_mm:.2f} мм;'
     else:
         print("no mask set as argument")
         fragmen_type = "кубик"
         length_type = "Сторона"
+        sample_size = (f'{sample_shape[0]*pixel_size_mm:.2f}x{sample_shape[1]*pixel_size_mm:.2f})x') +\
+                      (f'{sample_shape[2]*pixel_size_mm:.2f} мм;')
         masks = [np.ones(img_fragment.shape, dtype=bool) for img_fragment in img_fragments]
 
     get_porosity = lambda bin_img, mask: (np.sum(mask) - np.sum(bin_img)) / np.sum(mask)
@@ -69,8 +77,7 @@ def get_porosity_histogram_disrtibution(img_fragments,
 
     textstr = (f'$\sigma={np.std(porosities):.2f}$;') + \
               (f'\n $\mu={np.mean(porosities):.2f}$;') + \
-              (f'\n Размеры образца: \n {sample_shape[0]*pixel_size_mm:.2f}x') + \
-              (f'{sample_shape[1]*pixel_size_mm:.2f}x{sample_shape[2]*pixel_size_mm:.2f} мм;') + \
+              (f'\n Размеры образца: \n {sample_size}') + \
               (f'\n {length_type} {fragmen_type}а: {len(img_fragments[0])*pixel_size_mm:.2f} мм;') + \
               (f'\n {fragmen_type.capitalize()}ов: {len(img_fragments)} шт.')
 
@@ -141,7 +148,7 @@ def main_synchrotron(edge_size = 400):
     img_fragments = divide_image_into_cubic_fragments(bin_img, edge_size=edge_size)
     save_first_section_of_img(bin_img, file_id, edge_size)
 
-    get_porosity_histogram_disrtibution(img_fragments, file_id, bin_img.shape, PIXEL_SIZE_MM)
+    get_porosity_histogram_disrtibution(img_fragments, file_id, bin_img.shape, PIXEL_SIZE_MM_SYNCHROTRON)
 
 
 def get_sector_circle_mask(img_shape, center, radius_coef, sector_num):
@@ -231,8 +238,9 @@ if __name__=='__main__':
         get_porosity_histogram_disrtibution(cylindric_fragments, 
                                             sample_name,
                                             img3d.shape,
-                                            pixel_size_mm=PIXEL_SIZE_MM,
+                                            pixel_size_mm=PIXEL_SIZE_MM_SETUP,
                                             masks=cylindric_masks,
+                                            radius_coef = radius_coefs[polimer_type],
                                             save_folder=SAVE_IMG_DESKTOP_SETUP_FOLDER)
     # for sample_id in range(len(paths)):
     #     sample_name = list(paths.keys())[sample_id]
