@@ -48,8 +48,7 @@ def get_porosity_histogram_disrtibution(img_fragments,
                                         pixel_size_mm,
                                         masks=0,
                                         bins_num = 25,
-                                        radius_coef = np.nan,
-                                        save_folder=SAVE_IMG_SYNCHROTON_FOLDER):
+                                        radius_coef = np.nan):
 
     if not type(masks) == int:
         fragmen_type = "сектор"
@@ -87,7 +86,7 @@ def get_porosity_histogram_disrtibution(img_fragments,
 
     ax.set_title(f"sample {file_name}")
 
-    dm.save_plot(fig, save_folder, f'hist {file_name}')
+    return fig
 
 
 def plot_cubic_periodic_grid(img, ax, step):
@@ -235,13 +234,14 @@ if __name__=='__main__':
                                                             height=len(img3d)//3-1,
                                                             radius_coef=radius_coefs[polimer_type])
 
-        get_porosity_histogram_disrtibution(cylindric_fragments, 
-                                            sample_name,
-                                            img3d.shape,
-                                            pixel_size_mm=PIXEL_SIZE_MM_SETUP,
-                                            masks=cylindric_masks,
-                                            radius_coef = radius_coefs[polimer_type],
-                                            save_folder=SAVE_IMG_DESKTOP_SETUP_FOLDER)
+        fig = get_porosity_histogram_disrtibution(cylindric_fragments, 
+                                                  sample_name,
+                                                  img3d.shape,
+                                                  pixel_size_mm=PIXEL_SIZE_MM_SETUP,
+                                                  masks=cylindric_masks,
+                                                  radius_coef = radius_coefs[polimer_type])
+        
+        dm.save_plot(fig, SAVE_IMG_DESKTOP_SETUP_FOLDER, f'hist {sample_id} {sample_name}')
     # for sample_id in range(len(paths)):
     #     sample_name = list(paths.keys())[sample_id]
     #     img3d = ~get_bin_img(sample_name)
