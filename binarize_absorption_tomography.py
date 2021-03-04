@@ -41,8 +41,8 @@ polimer_attenuations_PDL05 = ["low",
                               "low",
                               "low", #manual 5
                               "low", #manual 6
-                              "high", #manual 7
-                              "high", # 8
+                              "low", #manual 7
+                              "low", # 8
                               "high", # 9
                               "low", # 10
                               "low", # 11
@@ -110,7 +110,7 @@ def plot_N_sections_multiotsu(img3d,
 
 if __name__=='__main__':
     # выбрать тип полимера
-    polimer_type = ["PDL-05", "PDLG-5002"][1]
+    polimer_type = ["PDL-05", "PDLG-5002"][0]
 
     radius_coefs = {"PDL-05": 0.9, "PDLG-5002": 0.95}
     polimer_attenuation = {"PDL-05": polimer_attenuations_PDL05,
@@ -118,7 +118,7 @@ if __name__=='__main__':
     
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-    for sample_id in range(len(paths)):
+    for sample_id in [14]: #range(len(paths)):
         print(sample_id)
         sample_name = list(paths.keys())[sample_id]
         sample = h5py.File(paths[sample_name],'r')
@@ -128,31 +128,32 @@ if __name__=='__main__':
         # preview sections
         plot_N_sections_multiotsu(img3d,
                                   polimer_attenuations_PDL05[sample_id],
-                                  str(sample_id) + ' ' + sample_name)
+                                  str(sample_id) + ' ' + sample_name,
+                                  N=5)
 
         # binarize + save
 
-        # fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(21, 14))
-        # for ax, i in zip(axes[0], [0, len(img3d) // 2, -1]):
-        #     ax.imshow(img3d[i], cmap="gray")
+        fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(21, 14))
+        for ax, i in zip(axes[0], [0, len(img3d) // 2, -1]):
+            ax.imshow(img3d[i], cmap="gray")
 
-        # img3d = gaussian_filter(img3d, sigma=3)
-        # img3d = binarize_without_eppendorf(img3d, polimer_attenuation=polimer_attenuation[polimer_type][sample_id])
-        # img3d = lv.remove_levitating_stones(img3d)
+        img3d = gaussian_filter(img3d, sigma=3)
+        img3d = binarize_without_eppendorf(img3d, polimer_attenuation=polimer_attenuation[polimer_type][sample_id])
+        img3d = lv.remove_levitating_stones(img3d)
         
-        # section_shape = img3d[0].shape
-        # center = np.asarray(section_shape) // 2
-        # rr, cc = disk(center, int(np.min(center)*radius_coefs[polimer_type]), shape=section_shape)
-        # mask = np.zeros(section_shape, dtype=int)
-        # mask[rr, cc] = True
+        section_shape = img3d[0].shape
+        center = np.asarray(section_shape) // 2
+        rr, cc = disk(center, int(np.min(center)*radius_coefs[polimer_type]), shape=section_shape)
+        mask = np.zeros(section_shape, dtype=int)
+        mask[rr, cc] = True
 
-        # for i, img2d in enumerate(img3d):
-        #     img3d[i] = mask * img2d
+        for i, img2d in enumerate(img3d):
+            img3d[i] = mask * img2d
 
-        # for ax, i in zip(axes[1], [0, len(img3d) // 2, -1]):
-        #     ax.imshow(img3d[i], cmap="gray")
+        for ax, i in zip(axes[1], [0, len(img3d) // 2, -1]):
+            ax.imshow(img3d[i], cmap="gray")
 
-        # dm.save_plot(fig, "setup bin section", 'section '+ str(sample_id) + ' ' + sample_name)
-        # save_to_h5(img3d, sample_name)
+        dm.save_plot(fig, "setup bin section", 'section '+ str(sample_id) + ' ' + sample_name)
+        save_to_h5(~img3d.astype(bool), sample_name)
 
     sample.close()
