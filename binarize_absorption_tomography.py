@@ -14,7 +14,7 @@ from phase_contrast_restoration import save as save_to_h5
 
 plt.style.use('seaborn-whitegrid')
 plt.rcParams.update({'font.size':22})
-SAVE_IMG_DESKTOP_SETUP_FOLDER = 'setup bin section'
+SAVE_IMG_DESKTOP_SETUP_FOLDER = 'setup sections preview'
 
 # Вручную подобраны параметры для бинаризации polimer_attenuations_PDLG5002 и polimer_attenuations_PDL05
 
@@ -70,16 +70,17 @@ def binarize_without_eppendorf(img3d, polimer_attenuation):
     return np.asarray(img3d_bin)
 
 
-def plot_3_sections_multiotsu(img3d,
+def plot_N_sections_multiotsu(img3d,
                               polimer_attenuation,
                               filename,
+                              N=3,
                               radius_coef=0.9,
-                              folder=SAVE_IMG_DESKTOP_SETUP_FOLDER+"multy"):
+                              folder=SAVE_IMG_DESKTOP_SETUP_FOLDER):
 
-    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(21, 21))
+    section_indexes = np.linspace(0, len(img3d), N, endpoint=False, dtype=int)
+    fig, axes = plt.subplots(nrows=3, ncols=N, figsize=(21, 21))
     axes_plot, axes_hist, axes_bin = axes
 
-    section_indexes = [0, len(img3d)//2, -1]
     img3d = gaussian_filter(img3d, sigma=3)
 
     for ax_plot, ax_hist, i in zip(axes_plot, axes_hist, section_indexes):
@@ -124,32 +125,34 @@ if __name__=='__main__':
         
         img3d = sample['Reconstruction'][:]
         
-        fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(21, 14))
-        for ax, i in zip(axes[0], [0, len(img3d) // 2, -1]):
-            ax.imshow(img3d[i], cmap="gray")
-
         # preview sections
-        # plot_3_sections_multiotsu(img3d,
-        #                           polimer_attenuations_PDL05[sample_id],
-        #                           str(sample_id) + ' ' + sample_name)
-                                  
-        img3d = gaussian_filter(img3d, sigma=3)
-        img3d = binarize_without_eppendorf(img3d, polimer_attenuation=polimer_attenuation[polimer_type][sample_id])
-        img3d = lv.remove_levitating_stones(img3d)
+        plot_N_sections_multiotsu(img3d,
+                                  polimer_attenuations_PDL05[sample_id],
+                                  str(sample_id) + ' ' + sample_name)
+
+        # binarize + save
+
+        # fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(21, 14))
+        # for ax, i in zip(axes[0], [0, len(img3d) // 2, -1]):
+        #     ax.imshow(img3d[i], cmap="gray")
+
+        # img3d = gaussian_filter(img3d, sigma=3)
+        # img3d = binarize_without_eppendorf(img3d, polimer_attenuation=polimer_attenuation[polimer_type][sample_id])
+        # img3d = lv.remove_levitating_stones(img3d)
         
-        section_shape = img3d[0].shape
-        center = np.asarray(section_shape) // 2
-        rr, cc = disk(center, int(np.min(center)*radius_coefs[polimer_type]), shape=section_shape)
-        mask = np.zeros(section_shape, dtype=int)
-        mask[rr, cc] = True
+        # section_shape = img3d[0].shape
+        # center = np.asarray(section_shape) // 2
+        # rr, cc = disk(center, int(np.min(center)*radius_coefs[polimer_type]), shape=section_shape)
+        # mask = np.zeros(section_shape, dtype=int)
+        # mask[rr, cc] = True
 
-        for i, img2d in enumerate(img3d):
-            img3d[i] = mask * img2d
+        # for i, img2d in enumerate(img3d):
+        #     img3d[i] = mask * img2d
 
-        for ax, i in zip(axes[1], [0, len(img3d) // 2, -1]):
-            ax.imshow(img3d[i], cmap="gray")
+        # for ax, i in zip(axes[1], [0, len(img3d) // 2, -1]):
+        #     ax.imshow(img3d[i], cmap="gray")
 
-        dm.save_plot(fig, "setup bin section", 'section '+ str(sample_id) + ' ' + sample_name)
-        save_to_h5(img3d, sample_name)
+        # dm.save_plot(fig, "setup bin section", 'section '+ str(sample_id) + ' ' + sample_name)
+        # save_to_h5(img3d, sample_name)
 
     sample.close()
