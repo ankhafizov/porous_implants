@@ -1,4 +1,3 @@
-from porespy.generators import blobs
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage.draw import disk, rectangle
@@ -213,7 +212,7 @@ def divide_image_into_sector_cylindric_fragments(img3d, height, radius_coef):
 
 if __name__=='__main__':
     
-    polimer_type = ["PDL-05", "PDLG-5002"][1]
+    polimer_type = ["PDL-05", "PDLG-5002"][0]
     radius_coefs = {"PDL-05": 0.9, "PDLG-5002": 0.95}
 
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
@@ -222,7 +221,7 @@ if __name__=='__main__':
         sample_name = list(paths.keys())[sample_id]
         print(f"============== {sample_id} sample: {sample_name} ==============")
 
-        img3d = ~get_bin_img(sample_name)
+        img3d = get_bin_img(sample_name)
         print('tot: ', np.sum(img3d)/img3d.size)
 
         fig, ax = plt.subplots()
