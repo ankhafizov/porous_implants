@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage.draw import disk, rectangle
 from icecream import ic
+import pandas as pd
 
 import data_manager as dm
 from helper import crop, get_2d_slice_of_sample_from_database
@@ -86,6 +87,14 @@ def get_porosity_histogram_disrtibution(img_fragments,
     ax.set_title(f"sample {file_name}")
 
     return fig
+
+
+def get_mean_porosity_and_std(img_fragments, masks):
+    get_porosity = lambda bin_img, mask: (np.sum(mask) - np.sum(bin_img)) / np.sum(mask)
+
+    porosities = [get_porosity(img_fragment, mask) for mask, img_fragment in zip(masks, img_fragments)]
+    std, mu = np.std(porosities), np.mean(porosities)
+    return std, mu
 
 
 def plot_cubic_periodic_grid(img, ax, step):
@@ -210,45 +219,77 @@ def divide_image_into_sector_cylindric_fragments(img3d, height, radius_coef):
     return np.asarray(img_fragments), np.asarray(mask_fragments)
 
 
+def calc_histograms_lab_setups():
+    for polimer_type in ["PDL-05", "PDLG-5002"]:
+        radius_coefs = {"PDL-05": 0.9, "PDLG-5002": 0.95}
+
+        paths = file_paths.get_benchtop_setup_paths(polimer_type)
+
+        for sample_id in range(len(paths)):
+            sample_name = list(paths.keys())[sample_id]
+            print(f"============== {sample_id} sample: {sample_name} ==============")
+
+            img3d = get_bin_img(sample_name)
+            print('tot: ', np.sum(img3d)/img3d.size)
+
+            fig, ax = plt.subplots()
+            ax.imshow(img3d[0], cmap="gray")
+            dm.save_plot(fig, "previews", f'{sample_id} bin ' + sample_name)
+
+            cylindric_fragments, cylindric_masks \
+                = divide_image_into_sector_cylindric_fragments(img3d,
+                                                                height=len(img3d)//3-1,
+                                                                radius_coef=radius_coefs[polimer_type])
+
+            fig = get_porosity_histogram_disrtibution(cylindric_fragments, 
+                                                    sample_name,
+                                                    img3d.shape,
+                                                    pixel_size_mm=PIXEL_SIZE_MM_SETUP,
+                                                    masks=cylindric_masks,
+                                                    radius_coef = radius_coefs[polimer_type])
+            
+            dm.save_plot(fig, SAVE_IMG_DESKTOP_SETUP_FOLDER, f'hist {sample_id} {sample_name}')
+
+
 if __name__=='__main__':
     
-    polimer_type = ["PDL-05", "PDLG-5002"][0]
-    radius_coefs = {"PDL-05": 0.9, "PDLG-5002": 0.95}
+    for polimer_type in ["PDL-05", "PDLG-5002"]:
+        radius_coefs = {"PDL-05": 0.9, "PDLG-5002": 0.95}
 
-    paths = file_paths.get_benchtop_setup_paths(polimer_type)
+        paths = file_paths.get_benchtop_setup_paths(polimer_type)
+        df = pd.DataFrame(columns = ['polimer_type', 'sample_number', 'date', 'mean', 'std'])
 
-    for sample_id in range(len(paths)):
-        sample_name = list(paths.keys())[sample_id]
-        print(f"============== {sample_id} sample: {sample_name} ==============")
+        for sample_id in range(len(paths)):
+            sample_name = list(paths.keys())[sample_id]
+            print(f"============== {sample_id} sample: {sample_name} ==============")
+            print(sample_name.split())
+            
 
-        img3d = get_bin_img(sample_name)
-        print('tot: ', np.sum(img3d)/img3d.size)
+            img3d = get_bin_img(sample_name)
+            print('tot: ', np.sum(img3d)/img3d.size)
 
-        fig, ax = plt.subplots()
-        ax.imshow(img3d[0], cmap="gray")
-        dm.save_plot(fig, "previews", f'{sample_id} bin ' + sample_name)
+            fig, ax = plt.subplots()
+            ax.imshow(img3d[0], cmap="gray")
+            dm.save_plot(fig, "previews", f'{sample_id} bin ' + sample_name)
 
-        cylindric_fragments, cylindric_masks \
-            = divide_image_into_sector_cylindric_fragments(img3d,
+            cylindric_fragments, cylindric_masks \
+                = divide_image_into_sector_cylindric_fragments(img3d,
                                                             height=len(img3d)//3-1,
                                                             radius_coef=radius_coefs[polimer_type])
 
-        fig = get_porosity_histogram_disrtibution(cylindric_fragments, 
-                                                  sample_name,
-                                                  img3d.shape,
-                                                  pixel_size_mm=PIXEL_SIZE_MM_SETUP,
-                                                  masks=cylindric_masks,
-                                                  radius_coef = radius_coefs[polimer_type])
+            std, mean = get_mean_porosity_and_std(cylindric_fragments, cylindric_masks)
+
+            data_info = sample_name.split()
+            polimer, sample_number, date = data_info[0][:-1], data_info[0][-1], data_info[-1]
+            df = df.append({'polimer_type': polimer, 
+                            'sample_number': sample_number,
+                            'date': date,
+                            'mean': mean,
+                            'std': std}, ignore_index=True)
+            print(polimer, sample_number, date, mean, std)
+            print(df)
+            dm.save_dataframe(df, "setup_culindric_porosities.csv")
         
-        dm.save_plot(fig, SAVE_IMG_DESKTOP_SETUP_FOLDER, f'hist {sample_id} {sample_name}')
-    # for sample_id in range(len(paths)):
-    #     sample_name = list(paths.keys())[sample_id]
-    #     img3d = ~get_bin_img(sample_name)
-    #     print('tot: ', np.sum(img3d)/img3d.size)
-    #     fig = plot_sector_circle_mask(img3d, radius_coefs[polimer_type])
-
-    #     dm.save_plot(fig, "setup bin section", 'bin ' + str(sample_id) + ' ' + sample_name)
-
 
 
 
