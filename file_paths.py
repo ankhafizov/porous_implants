@@ -51,7 +51,7 @@ def get_benchtop_setup_paths(polimer_name):
         }
     elif polimer_name == "PDLG-5002":
         folders = {'PDLG-5002_1 date: 3_18_2020': '968ce006-9100-494f-90bd-388c416e403a',
-                   'PDLG-5002_1 date: 6_10_2020': '968ce006-9100-494f-90bd-388c416e403a',
+                   'PDLG-5002_1 date: 6_10_2020': 'ec7dc273-749a-400d-8bc3-edb05fbda71b',
                    'PDLG-5002_1 date: 6_17_2020': 'f31557ef-082f-49dc-ab4e-11f15f9c2d2d',
                    'PDLG-5002_1 date: 6_25_2020': '72a57cec-4ed8-4ef3-b388-b5e35f21a5b4',
                    'PDLG-5002_1 date: 7_2_2020': '1a1a4c5d-77ed-49d4-b10f-6d4926cd3dc4',
