@@ -207,29 +207,36 @@ if __name__=='__main__':
 
     paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-    sample_id = 8
+    sample_id = 14
     sample_name = list(paths.keys())[sample_id]
-    img3d = get_bin_img(sample_name)
+    img3d = get_bin_img(sample_name)[0:2]
 
-    cylindric_fragments, cylindric_masks \
-         = divide_image_into_sector_cylindric_fragments(img3d,
-                                                        height=250,
-                                                        radius_coef=radius_coefs[polimer_type])
+    r = np.min(img3d[0].shape) * radius_coefs[polimer_type]
+    vol = np.pi * r**2 * len(img3d)
+    ic(np.sum(img3d)/vol)
+    fig, ax = plt.subplots()
+    ax.imshow(img3d[0])
+    dm.save_plot(fig, "previews", 'bin ' + sample_name)
+
+    # cylindric_fragments, cylindric_masks \
+    #      = divide_image_into_sector_cylindric_fragments(img3d,
+    #                                                     height=250,
+    #                                                     radius_coef=radius_coefs[polimer_type])
     
-    fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(21, 7))
-    axes = np.transpose(axes)
-    for ax, i in zip(axes, [0, len(cylindric_fragments[0]) // 2, -1]):
-        ax[0].imshow(cylindric_fragments[0][i], cmap="gray")
-        ax[1].imshow(cylindric_masks[0][i], cmap="gray")
+    # fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(21, 7))
+    # axes = np.transpose(axes)
+    # for ax, i in zip(axes, [0, len(cylindric_fragments[0]) // 2, -1]):
+    #     ax[0].imshow(cylindric_fragments[0][i], cmap="gray")
+    #     ax[1].imshow(cylindric_masks[0][i], cmap="gray")
 
-    dm.save_plot(fig, "setup bin section", 'bin ' + sample_name)
+    # dm.save_plot(fig, "setup bin section", 'bin ' + sample_name)
 
-    get_porosity_histogram_disrtibution(cylindric_fragments, 
-                                        sample_name,
-                                        img3d.shape,
-                                        pixel_size_mm=PIXEL_SIZE_MM,
-                                        masks=cylindric_masks,
-                                        save_folder=SAVE_IMG_DESKTOP_SETUP_FOLDER)
+    # get_porosity_histogram_disrtibution(cylindric_fragments, 
+    #                                     sample_name,
+    #                                     img3d.shape,
+    #                                     pixel_size_mm=PIXEL_SIZE_MM,
+    #                                     masks=cylindric_masks,
+    #                                     save_folder=SAVE_IMG_DESKTOP_SETUP_FOLDER)
     # for sample_id in range(len(paths)):
     #     sample_name = list(paths.keys())[sample_id]
     #     img3d = get_bin_img(sample_name)
