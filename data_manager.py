@@ -50,7 +50,7 @@ def save_dataframe(df, file_name):
         os.remove(file_path)
 
     if file_name[-3:]=="csv":
-        df.to_csv(file_path, sep=DEFAULT_SEP, decimal=DEFAULT_DECIMAL)
+        df.to_csv(file_path, index=False, sep=DEFAULT_SEP, decimal=DEFAULT_DECIMAL)
     elif file_name[-3:]=="lsx":
         df.to_excel(file_path)
     else:
