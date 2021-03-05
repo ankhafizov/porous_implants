@@ -18,6 +18,7 @@ if __name__=='__main__':
         sample_name = list(paths.keys())[sample_id]
         img3d = get_bin_img(sample_name)
         
+        # save_to_h5(~img3d, sample_name)
         fig, ax = plt.subplots()
         ax.imshow(img3d[0], cmap="gray")
         dm.save_plot(fig, "previews", f'{sample_id} bin ' + sample_name)
