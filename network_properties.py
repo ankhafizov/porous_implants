@@ -56,14 +56,15 @@ def save_distribution(dist, file_name):
 
 
 if __name__=='__main__':
-    df =  pd.DataFrame(columns = ['polimer_type',
-                                  'sample_number',
-                                  'median_diameters',
-                                  'mean_diameters',
-                                  'standard_dev_diameters',
-                                  'mean_distances',
-                                  'median_distances',
-                                  'standard_dev_distances']) 
+    df = dm.load_data("setup_culindric_diameters_and_distances.csv") 
+    # df = pd.DataFrame(columns = ['polimer_type',
+    #                              'sample_number',
+    #                              'median_diameters',
+    #                              'mean_diameters',
+    #                              'standard_dev_diameters',
+    #                              'mean_distances',
+    #                              'median_distances',
+    #                              'standard_dev_distances']) 
 
     for polimer_type in ["PDL-05", "PDLG-5002"]:
         sample_id = 1
