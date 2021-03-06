@@ -56,7 +56,8 @@ def save_distribution(dist, file_name):
 
 
 if __name__=='__main__':
-    df = dm.load_data("setup_culindric_diameters_and_distances.csv") 
+    df = dm.load_data("setup_culindric_diameters_and_distances.csv")
+    # TODO: add dates
     # df = pd.DataFrame(columns = ['polimer_type',
     #                              'sample_number',
     #                              'median_diameters',
