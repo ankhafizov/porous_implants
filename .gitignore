@@ -6,6 +6,7 @@ __pycache__/
 .vscode/
 
 venv/
+\distributions
 dataframes/
 plots/
 database/
