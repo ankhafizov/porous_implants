@@ -44,10 +44,10 @@ def get_benchtop_setup_paths(polimer_name):
                     'PDL-05_2 date: 6_30_2020': '71fc3967-f602-40f5-9809-fda22e3cbd73',
         
                     'PDL-05_3 date: 3_17_2020': '123d157a-15c9-4bb1-ada6-5f7bf6a4b81b',
-                    'PDL-05_3 date: 3_18_2020': '333e996e-a700-4d4e-81b8-d290d1408b4e',
-                    'PDL-05_3 date: 6_9_2020': 'bfefe457-bed4-47c3-b616-d3196cf493ab',
-                    'PDL-05_3 date: 6_16_2020': 'bebc103b-9329-4a8b-9947-eab3820f5fed',
-                    'PDL-05_3 date: 6_23_2020': 'fb763afa-dcaa-4cb0-8bd8-69a49fd7af2e'
+                    'PDL-05_3 date: 6_9_2020': '333e996e-a700-4d4e-81b8-d290d1408b4e',
+                    'PDL-05_3 date: 6_16_2020': 'bfefe457-bed4-47c3-b616-d3196cf493ab',
+                    'PDL-05_3 date: 6_23_2020': 'bebc103b-9329-4a8b-9947-eab3820f5fed',
+                    'PDL-05_3 date: 6_30_2020': 'fb763afa-dcaa-4cb0-8bd8-69a49fd7af2e'
         }
     elif polimer_name == "PDLG-5002":
         folders = {'PDLG-5002_1 date: 3_18_2020': '968ce006-9100-494f-90bd-388c416e403a',
