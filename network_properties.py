@@ -28,8 +28,9 @@ def plot_hist(y, dist_type, sample_name):
     ax.set_title(f"{title} \n std: {np.std(y):.2f} mkm")
     ax.set_xlabel(f"{dist_type}, mkm")
     ax.set_ylabel(f"count")
+    ax.set_xlim(0, 7000)
 
-    save_distribution(y, sample_name)
+    save_distribution(y, dist_type + ' ' + sample_name)
     return fig, np.mean(y), np.median(y), np.std(y)
 
 
@@ -56,7 +57,7 @@ def save_distribution(dist, file_name):
 
 
 if __name__=='__main__':
-    df = dm.load_data("setup_culindric_diameters_and_distances.csv")
+    # df = dm.load_data("setup_culindric_diameters_and_distances.csv")
     # TODO: add dates
     # df = pd.DataFrame(columns = ['polimer_type',
     #                              'sample_number',
@@ -67,12 +68,12 @@ if __name__=='__main__':
     #                              'median_distances',
     #                              'standard_dev_distances']) 
 
-    for polimer_type in ["PDL-05", "PDLG-5002"]:
+    for polimer_type in ["PDLG-5002"]:# ["PDL-05", "PDLG-5002"]:
         sample_id = 1
 
         paths = file_paths.get_benchtop_setup_paths(polimer_type)
 
-        for sample_id in range(len(paths)):
+        for sample_id in [10, 9]: #range(11):#range(len(paths)):
             sample_name = list(paths.keys())[sample_id]
 
             data_info = sample_name.split()
@@ -97,14 +98,14 @@ if __name__=='__main__':
                                                                                       sample_name)
             dm.save_plot(fig, "networks", f"{sample_id} " + title)
 
-            df = df.append({'polimer_type': polimer_type,
-                            'sample_number': sample_number,
-                            'median_diameters': median_diameters,
-                            'mean_diameters': mean_diameters,
-                            'standard_dev_diameters': standard_dev_diameters,
-                            'mean_distances': mean_distances,
-                            'median_distances': median_distances,
-                            'standard_dev_distances': standard_dev_distances}, ignore_index=True)
+            # df = df.append({'polimer_type': polimer_type,
+            #                 'sample_number': sample_number,
+            #                 'median_diameters': median_diameters,
+            #                 'mean_diameters': mean_diameters,
+            #                 'standard_dev_diameters': standard_dev_diameters,
+            #                 'mean_distances': mean_distances,
+            #                 'median_distances': median_distances,
+            #                 'standard_dev_distances': standard_dev_distances}, ignore_index=True)
             
-            dm.save_dataframe(df, "setup_culindric_diameters_and_distances.csv")
+            # dm.save_dataframe(df, "setup_culindric_diameters_and_distances.csv")
             print("================", polimer_type, sample_id, " finished ================")
